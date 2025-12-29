@@ -1,0 +1,36 @@
+[
+  {
+    "Id": "1",
+    "Type": "選擇題",
+    "Q": "React Native 是由哪家公司開發的？",
+    "A": "Google",
+    "B": "Meta (Facebook)",
+    "C": "Microsoft",
+    "D": "Apple",
+    "Ans": "B",
+    "Exp": "React Native 是由 Meta (前 Facebook) 開發的開源行動應用架構。"
+  },
+  {
+    "Id": "2",
+    "Type": "複選題",
+    "Q": "以下哪些是 React Native 的優點？",
+    "A": "跨平台支援",
+    "B": "熱重載 (Hot Reloading)",
+    "C": "效能接近原生",
+    "D": "只能開發 iOS 應用",
+    "Ans": "A,B,C",
+    "Exp": "React Native 支援 iOS 與 Android，具備熱重載功能，且效能非常接近原生應用。"
+  },
+  {
+    "Id": "3",
+    "Type": "是非題",
+    "Q": "Expo 是 React Native 的一個工具鏈。",
+    "A": "正確",
+    "B": "錯誤",
+    "C": "",
+    "D": "",
+    "Ans": "A",
+    "Exp": "Expo 是一個用於開發、構建和部署 React Native 應用的工具和服務生態系統。"
+  }
+]
+

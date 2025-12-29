@@ -1,0 +1,18 @@
+{
+  "config": {
+    "enableImport": true,
+    "enableTrash": false,
+    "HomeScreenHeaderTitle":"政府採購法題庫",
+    "enableSample": true,
+    "isFavorite" :true,
+    "isWrong" : true,
+    "isMock" : true
+  },
+    "questionFiles": [
+      {"id": "sample","displayName": "sample","fileName": "sample.json"},
+      {"id": "A001","displayName": "工程及技術2","fileName": "A001.json"},
+      {"id": "A002","displayName": "工程及技術3","fileName": "A002.json"},
+      {"id": "A003","displayName": "工程及技術3","fileName": "A003.json"}
+    ]
+}
+
