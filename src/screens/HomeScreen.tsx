@@ -10,6 +10,18 @@ import { QuestionService } from '../services/QuestionService';
 import { getQuestionData } from '../utils/questionLoader';
 import { Question, ViewMode } from '../types';
 
+interface QuestionListItem {
+  series_no: string;
+  displayName: string;
+  file: string;
+  total?: number;
+}
+
+interface QuestionGroup {
+  typeName: string;
+  items: QuestionListItem[];
+}
+
 interface Category {
   id: string;
   title: string;
@@ -27,6 +39,9 @@ const HomeScreen = () => {
   const [progressMap, setProgressMap] = useState<Record<string, number>>({}); // 紀錄各題庫練習進度
   const [completedMap, setCompletedMap] = useState<Record<string, boolean>>({}); // 紀錄已完成的題庫
   const [categories, setCategories] = useState<Category[]>([]); // 存放題庫分類清單
+  const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]); // 存放分組題庫
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set()); // 紀錄展開的分組
+  const [isQuestionListMode, setIsQuestionListMode] = useState(false); // 是否為分組模式
   const [headerTitle, setHeaderTitle] = useState('政府採購法題庫'); // 標題文字
 
   // 回應式佈局 (RWD) 配置
@@ -51,43 +66,73 @@ const HomeScreen = () => {
    */
   const loadCategories = async () => {
     const questionsIndex = require('../../assets/data/questions/questions.json');
+    const isListMode = questionsIndex.config?.isQuestionListFile === true;
+    setIsQuestionListMode(isListMode);
     
     // 設置頁面標題
     if (questionsIndex.config?.HomeScreenHeaderTitle) {
       setHeaderTitle(questionsIndex.config.HomeScreenHeaderTitle);
     }
 
-    // 過濾並建立題庫分類陣列
-    const dynamicCategories: Category[] = questionsIndex.questionFiles
-      .filter((file: any) => {
-        // 檢查是否啟用範例題庫
-        if (file.id === 'sample' && questionsIndex.config?.enableSample === false) {
-          return false;
-        }
-        return true;
-      })
-      .map((file: any) => {
-        let totalCount = file.count;
-        if (file.fileName) {
+    let dynamicCategories: Category[] = [];
+    let dynamicGroups: QuestionGroup[] = [];
+
+    if (isListMode && questionsIndex.questionListFiles) {
+      dynamicGroups = questionsIndex.questionListFiles.map((group: any) => ({
+        typeName: group.typeName,
+        items: group.items.map((item: any) => {
+          let totalCount = 0;
           try {
-            // 動態取得題庫檔案中的題目數量
-            const data = getQuestionData(file.fileName);
+            const data = getQuestionData(item.file);
             if (Array.isArray(data)) {
               totalCount = data.length;
             } else if (data && typeof data === 'object' && Array.isArray(data.questions)) {
               totalCount = data.questions.length;
             }
           } catch (e) {
-            console.error(`Error loading count for ${file.fileName}`, e);
+            console.error(`Error loading count for ${item.file}`, e);
           }
-        }
-        return {
-          id: file.id,
-          title: file.displayName,
-          total: totalCount,
-          fileName: file.fileName,
-        };
-      });
+          return {
+            series_no: item.series_no,
+            displayName: item.displayName,
+            file: item.file,
+            total: totalCount,
+          };
+        }),
+      }));
+      setQuestionGroups(dynamicGroups);
+    } else {
+      // 原有的單層結構處理
+      dynamicCategories = questionsIndex.questionFiles
+        .filter((file: any) => {
+          if (file.id === 'sample' && questionsIndex.config?.enableSample === false) {
+            return false;
+          }
+          // 只有 isQuestionFile 為 true 的才會顯示
+          return file.isQuestionFile === true;
+        })
+        .map((file: any) => {
+          let totalCount = file.count;
+          if (file.fileName) {
+            try {
+              const data = getQuestionData(file.fileName);
+              if (Array.isArray(data)) {
+                totalCount = data.length;
+              } else if (data && typeof data === 'object' && Array.isArray(data.questions)) {
+                totalCount = data.questions.length;
+              }
+            } catch (e) {
+              console.error(`Error loading count for ${file.fileName}`, e);
+            }
+          }
+          return {
+            id: file.id,
+            title: file.displayName,
+            total: totalCount,
+            fileName: file.fileName,
+          };
+        });
+    }
 
     // 從本地儲存 (Storage) 獲取用戶答題紀錄與完成狀態
     const userAnswers = await StorageService.getUserAnswers();
@@ -97,12 +142,17 @@ const HomeScreen = () => {
     
     // 建立所有有效題目 ID 的索引，用於過濾「我的最愛」與「錯題」
     let allQuestionIds = new Set<string>();
-    for (const file of questionsIndex.questionFiles) {
-      if (file.fileName) {
+    const filesToProcess = isListMode 
+      ? dynamicGroups.flatMap(g => g.items.map(i => ({ id: i.series_no, fileName: i.file })))
+      : questionsIndex.questionFiles.filter((f: any) => f.isQuestionFile === true);
+
+    for (const file of filesToProcess) {
+      if (file.fileName || (file as any).file) {
+        const fName = (file as any).fileName || (file as any).file;
         try {
-          const data = getQuestionData(file.fileName);
+          const data = getQuestionData(fName);
           const questions = Array.isArray(data) ? data : (data?.questions || []);
-          questions.forEach((q: any) => allQuestionIds.add(`${file.id}_${q.Id}`));
+          questions.forEach((q: any) => allQuestionIds.add(`${file.id || (file as any).series_no}_${q.Id}`));
         } catch (e) {}
       }
     }
@@ -111,20 +161,20 @@ const HomeScreen = () => {
     const favoriteCount = answersArray.filter(a => a.isFavorite && allQuestionIds.has(a.questionId)).length;
     const wrongCount = answersArray.filter(a => a.isAnswered && !a.isCorrect && allQuestionIds.has(a.questionId)).length;
 
-    const finalCategories = [...dynamicCategories];
+    const specialCategories: Category[] = [];
     
     // 根據配置加入特殊分類：最愛、錯題、模擬測驗
     if (questionsIndex.config?.isFavorite !== false) {
-      finalCategories.push({ id: 'favorite', title: '最愛練習', total: favoriteCount });
+      specialCategories.push({ id: 'favorite', title: '最愛練習', total: favoriteCount });
     }
     if (questionsIndex.config?.isWrong !== false) {
-      finalCategories.push({ id: 'wrong', title: '錯題複習', total: wrongCount });
+      specialCategories.push({ id: 'wrong', title: '錯題複習', total: wrongCount });
     }
     if (questionsIndex.config?.isMock !== false) {
-      finalCategories.push({ id: 'mock', title: '模擬測驗', total: 50 });
+      specialCategories.push({ id: 'mock', title: '模擬測驗', total: 50 });
     }
 
-    setCategories(finalCategories);
+    setCategories(isListMode ? specialCategories : [...dynamicCategories, ...specialCategories]);
   };
 
   /**
@@ -144,14 +194,29 @@ const HomeScreen = () => {
     
     // 獲取所有有效的題目 ID
     const questionsIndex = require('../../assets/data/questions/questions.json');
+    const isListMode = questionsIndex.config?.isQuestionListFile === true;
+    
     let allQuestionIds = new Set<string>();
-    for (const file of questionsIndex.questionFiles) {
-      if (file.fileName) {
-        try {
-          const data = getQuestionData(file.fileName);
-          const questions = Array.isArray(data) ? data : (data?.questions || []);
-          questions.forEach((q: any) => allQuestionIds.add(`${file.id}_${q.Id}`));
-        } catch (e) {}
+    
+    if (isListMode && questionsIndex.questionListFiles) {
+      for (const group of questionsIndex.questionListFiles) {
+        for (const item of group.items) {
+          try {
+            const data = getQuestionData(item.file);
+            const questions = Array.isArray(data) ? data : (data?.questions || []);
+            questions.forEach((q: any) => allQuestionIds.add(`${item.series_no}_${q.Id}`));
+          } catch (e) {}
+        }
+      }
+    } else {
+      for (const file of questionsIndex.questionFiles.filter((f: any) => f.isQuestionFile === true)) {
+        if (file.fileName) {
+          try {
+            const data = getQuestionData(file.fileName);
+            const questions = Array.isArray(data) ? data : (data?.questions || []);
+            questions.forEach((q: any) => allQuestionIds.add(`${file.id}_${q.Id}`));
+          } catch (e) {}
+        }
       }
     }
 
@@ -202,7 +267,11 @@ const HomeScreen = () => {
       let allLoadedQuestions: Question[] = [];
       
       // 載入所有題庫內容以進行篩選
-      for (const file of questionsIndex.questionFiles) {
+      const filesToProcess = questionsIndex.config?.isQuestionListFile === true
+        ? (questionsIndex.questionListFiles || []).flatMap((g: any) => g.items.map((i: any) => ({ displayName: i.displayName, id: i.series_no, fileName: i.file })))
+        : (questionsIndex.questionFiles || []).filter((f: any) => f.isQuestionFile === true);
+
+      for (const file of filesToProcess) {
         if (file.fileName) {
           const rawData = getQuestionData(file.fileName);
           const loaded = await QuestionService.loadQuestionsFromStatic(rawData, {
@@ -248,6 +317,18 @@ const HomeScreen = () => {
       title: category.title,
       viewMode,
       startIndex: viewMode === ViewMode.REVIEW ? 0 : (progressMap[progressKey] || 0)
+    });
+  };
+
+  const toggleGroup = (typeName: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(typeName)) {
+        next.delete(typeName);
+      } else {
+        next.add(typeName);
+      }
+      return next;
     });
   };
 
@@ -321,6 +402,32 @@ const HomeScreen = () => {
     );
   };
 
+  const renderGroup = (group: QuestionGroup) => {
+    const isExpanded = expandedGroups.has(group.typeName);
+    return (
+      <View key={group.typeName} style={styles.groupContainer}>
+        <TouchableOpacity 
+          style={styles.groupHeader} 
+          onPress={() => toggleGroup(group.typeName)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.groupTitle}>{group.typeName}</Text>
+          <Text style={styles.groupIcon}>{isExpanded ? '▼' : '▶'}</Text>
+        </TouchableOpacity>
+        {isExpanded && (
+          <View style={styles.groupItems}>
+            {group.items.map(item => renderCategoryCard({
+              id: item.series_no,
+              title: item.displayName,
+              total: item.total || 0,
+              fileName: item.file
+            }))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -330,7 +437,14 @@ const HomeScreen = () => {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
         >
-          {categories.map(renderCategoryCard)}
+          {isQuestionListMode ? (
+            <>
+              {questionGroups.map(renderGroup)}
+              {categories.map(renderCategoryCard)}
+            </>
+          ) : (
+            categories.map(renderCategoryCard)
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -341,6 +455,32 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#007AFF' },
   container: { flex: 1, backgroundColor: '#F2F2F7' },
   scrollContent: { paddingVertical: 8, flexGrow: 1 },
+  groupContainer: {
+    marginBottom: 8,
+    backgroundColor: '#fff',
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
+  },
+  groupTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  groupIcon: {
+    fontSize: 16,
+    color: '#8E8E93',
+  },
+  groupItems: {
+    backgroundColor: '#F2F2F7',
+    paddingLeft: 0,
+  },
   header: { 
     height: Platform.OS === 'web' ? 60 : 50,
     backgroundColor: '#007AFF', 

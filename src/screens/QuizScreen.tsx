@@ -293,7 +293,10 @@ const QuizScreen = () => {
 
   const handleSearchQuestion = () => {
     const optionsStr = ['A', 'B', 'C', 'D', 'E']
-      .map(key => (currentQuestion as any)[key])
+      .map(key => {
+        const val = (currentQuestion as any)[key];
+        return val ? `${key}.${val}` : '';
+      })
       .filter(val => !!val)
       .join(' ');
     const query = encodeURIComponent(`${currentQuestion.content} ${optionsStr}`);

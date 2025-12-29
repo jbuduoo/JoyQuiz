@@ -50,6 +50,7 @@ export interface QuestionFile {
   testName: string;
   subject?: string;
   series_no: string;
+  isQuestionFile?: boolean;
 }
 
 export interface QuestionGroup {
