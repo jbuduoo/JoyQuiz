@@ -286,8 +286,8 @@ const QuizScreen = () => {
   };
 
   const handleReportIssue = () => {
-    const instanceId = currentQuestion.id;
-    const googleFormUrl = `https://docs.google.com/forms/d/e/1FAIpQLSfnfLFKCPYCRXbY12_xv5abVfvon_FTULBc0FYd4d7xD2A7ZQ/viewform?usp=pp_url&entry.654895695=${encodeURIComponent(instanceId)}`;
+    const reportContent = `${currentQuestion.testName}_${currentQuestion.id}`;
+    const googleFormUrl = `https://docs.google.com/forms/d/e/1FAIpQLSfnfLFKCPYCRXbY12_xv5abVfvon_FTULBc0FYd4d7xD2A7ZQ/viewform?usp=pp_url&entry.654895695=${encodeURIComponent(reportContent)}`;
     Linking.openURL(googleFormUrl);
   };
 
@@ -387,7 +387,7 @@ const QuizScreen = () => {
             </View>
             <Text style={styles.correctAnswerText}>正確答案：{currentQuestion.Ans}</Text>
             <Text style={styles.expText}>
-              編號 {currentQuestion.questionNumber}: {currentQuestion.exp || '暫無詳解'}
+              {currentQuestion.exp || '暫無詳解'}
             </Text>
           </View>
         )}

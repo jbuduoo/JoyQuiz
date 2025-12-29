@@ -18,41 +18,41 @@
     ],
     "questionListFiles": [
       {
-        "typeName": "選擇題",
+        "typeName": "是非題",
         "items": [
-          {"series_no": "A001","displayName": "政府採購法之履約管理及驗收","file": "A001.json"},
-          {"series_no": "A002","displayName": "政府採購法之罰則及附則","file": "A002.json"},
-          {"series_no": "A003","displayName": "政府採購法之總則、招標及決標","file": "A003.json"},
-          {"series_no": "A004","displayName": "政府採購全生命週期概論","file": "A004.json"},
-          {"series_no": "A005","displayName": "道德規範及違法處置","file": "A005.json"},
-          {"series_no": "A006","displayName": "政府採購法之爭議處理","file": "A006.json"},
-          {"series_no": "A007","displayName": "底價及價格分析","file": "A007.json"},
-          {"series_no": "A008","displayName": "採購契約","file": "A008.json"},
-          {"series_no": "A009","displayName": "投標須知及招標文件製作","file": "A009.json"},
-          {"series_no": "A010","displayName": "錯誤採購態樣","file": "A010.json"},
-          {"series_no": "A011","displayName": "電子採購實務","file": "A011.json"},
-          {"series_no": "A012","displayName": "最有利標及評選優勝廠商","file": "A012.json"},
-          {"series_no": "A013","displayName": "財物及勞務採購作業","file": "A013.json"},
-          {"series_no": "A014","displayName": "工程及技術服務採購作業","file": "A014.json"}
+          {"series_no": "A001","displayName": "工程及技術服務採購作業","file": "A001.json"},
+          {"series_no": "A002","displayName": "財物及勞務採購作業","file": "A002.json"},
+          {"series_no": "A003","displayName": "最有利標及評選優勝廠商","file": "A003.json"},
+          {"series_no": "A004","displayName": "電子採購實務","file": "A004.json"},
+          {"series_no": "A005","displayName": "錯誤採購態樣","file": "A005.json"},
+          {"series_no": "A006","displayName": "投標須知及招標文件製作","file": "A006.json"},
+          {"series_no": "A007","displayName": "採購契約","file": "A007.json"},
+          {"series_no": "A008","displayName": "底價及價格分析","file": "A008.json"},
+          {"series_no": "A009","displayName": "政府採購法之爭議處理","file": "A009.json"},
+          {"series_no": "A010","displayName": "道德規範及違法處置","file": "A010.json"},
+          {"series_no": "A011","displayName": "政府採購全生命週期概論","file": "A011.json"},
+          {"series_no": "A012","displayName": "政府採購法之總則、招標及決標","file": "A012.json"},
+          {"series_no": "A013","displayName": "政府採購法之罰則及附則","file": "A013.json"},
+          {"series_no": "A014","displayName": "政府採購法之履約管理及驗收","file": "A014.json"}
            ]
       },
       {
-        "typeName": "是非題",
+        "typeName": "選擇題",
         "items": [
-          {"series_no": "B001","displayName": "政府採購法之罰則及附則","file": "B001.json"},
-          {"series_no": "B002","displayName": "政府採購法之履約管理及驗收","file": "B002.json"},
-          {"series_no": "B003","displayName": "政府採購法之總則、招標及決標","file": "B003.json"},
-          {"series_no": "B004","displayName": "政府採購全生命週期概論","file": "B004.json"},
-          {"series_no": "B005","displayName": "道德規範及違法處置","file": "B005.json"},
-          {"series_no": "B006","displayName": "政府採購法之爭議處理","file": "B006.json"},
-          {"series_no": "B007","displayName": "底價及價格分析","file": "B007.json"},
-          {"series_no": "B008","displayName": "採購契約","file": "B008.json"},
-          {"series_no": "B009","displayName": "投標須知及招標文件製作","file": "B009.json"},
-          {"series_no": "B010","displayName": "錯誤採購態樣","file": "B010.json"},
-          {"series_no": "B011","displayName": "電子採購實務","file": "B011.json"},
-          {"series_no": "B012","displayName": "最有利標及評選優勝廠商","file": "B012.json"},
-          {"series_no": "B013","displayName": "財物及勞務採購作業","file": "B013.json"},
-          {"series_no": "B014","displayName": "工程及技術服務採購作業","file": "B014.json"}
+          {"series_no": "B001","displayName": "工程及技術服務採購作業","file": "B001.json"},
+          {"series_no": "B002","displayName": "財物及勞務採購作業","file": "B002.json"},
+          {"series_no": "B003","displayName": "最有利標及評選優勝廠商","file": "B003.json"},
+          {"series_no": "B004","displayName": "電子採購實務","file": "B004.json"},
+          {"series_no": "B005","displayName": "錯誤採購態樣","file": "B005.json"},
+          {"series_no": "B006","displayName": "投標須知及招標文件製作","file": "B006.json"},
+          {"series_no": "B007","displayName": "採購契約","file": "B007.json"},
+          {"series_no": "B008","displayName": "底價及價格分析","file": "B008.json"},
+          {"series_no": "B009","displayName": "政府採購法之爭議處理","file": "B009.json"},
+          {"series_no": "B010","displayName": "道德規範及違法處置","file": "B010.json"},
+          {"series_no": "B011","displayName": "政府採購全生命週期概論","file": "B011.json"},
+          {"series_no": "B012","displayName": "政府採購法之總則、招標及決標","file": "B012.json"},
+          {"series_no": "B013","displayName": "政府採購法之履約管理及驗收","file": "B013.json"},
+          {"series_no": "B014","displayName": "政府採購法之罰則及附則","file": "B014.json"}
          ]
       }
      ]
