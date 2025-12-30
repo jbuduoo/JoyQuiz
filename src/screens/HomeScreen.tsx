@@ -1,7 +1,8 @@
 //首頁
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, useWindowDimensions, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, useWindowDimensions, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
@@ -239,23 +240,6 @@ const HomeScreen = () => {
     let questions: Question[] = [];
     let viewMode = mode;
 
-    // 如果是開始新的標準測驗且該題庫已完成，則重置完成狀態與進度
-    if (mode === ViewMode.QUIZ && completedMap[category.title]) {
-      await StorageService.clearCategoryCompleted(category.title);
-      await StorageService.saveProgress(category.title, 0);
-      
-      // 更新本地狀態，讓「檢視」按鈕立即消失，進度條歸零
-      setCompletedMap(prev => {
-        const next = { ...prev };
-        delete next[category.title];
-        return next;
-      });
-      setProgressMap(prev => ({
-        ...prev,
-        [category.title]: 0
-      }));
-    }
-
     // 處理特殊題庫 (最愛、錯題、模擬、複習)
     if (category.id === 'favorite' || category.id === 'review' || category.id === 'wrong' || category.id === 'mock') {
       // 確定 ViewMode
@@ -308,6 +292,28 @@ const HomeScreen = () => {
       }
     }
 
+    // 如果是開始新的標準測驗且該題庫已完成，則重置完成狀態與進度，並清空已作答紀錄
+    if (mode === ViewMode.QUIZ && completedMap[category.title]) {
+      await StorageService.clearCategoryCompleted(category.title);
+      await StorageService.saveProgress(category.title, 0);
+      
+      // 清空該分類已作答的答案
+      if (questions.length > 0) {
+        await StorageService.clearUserAnswers(questions.map(q => q.id));
+      }
+      
+      // 更新本地狀態，讓「檢視」按鈕立即消失，進度條歸零
+      setCompletedMap(prev => {
+        const next = { ...prev };
+        delete next[category.title];
+        return next;
+      });
+      setProgressMap(prev => ({
+        ...prev,
+        [category.title]: 0
+      }));
+    }
+
     const isSpecial = ['favorite', 'wrong', 'mock'].includes(category.id);
     const progressKey = isSpecial ? `${viewMode}_${category.title}` : category.title;
     
@@ -322,13 +328,10 @@ const HomeScreen = () => {
 
   const toggleGroup = (typeName: string) => {
     setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(typeName)) {
-        next.delete(typeName);
-      } else {
-        next.add(typeName);
+      if (prev.has(typeName)) {
+        return new Set();
       }
-      return next;
+      return new Set([typeName]);
     });
   };
 
@@ -394,7 +397,7 @@ const HomeScreen = () => {
             disabled={isDisabled}
           >
             <Text style={[styles.quizButtonText, isLargeScreen && styles.quizButtonTextLarge]}>
-              {isSpecial ? '開始\n測驗' : (hasProgress ? '繼續\n測驗' : '開始\n測驗')}
+              {isSpecial ? '開始\n測驗' : (isCompleted ? '重新\n測驗' : (hasProgress ? '繼續\n測驗' : '開始\n測驗'))}
             </Text>
           </TouchableOpacity>
         </View>

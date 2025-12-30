@@ -104,5 +104,30 @@ export class StorageService {
       console.error('Failed to clear category completed', e);
     }
   }
+
+  static async clearUserAnswers(questionIds: string[]): Promise<void> {
+    try {
+      const existingAnswersRaw = await AsyncStorage.getItem(KEYS.USER_ANSWERS);
+      if (!existingAnswersRaw) return;
+      const allAnswers: Record<string, UserAnswer> = JSON.parse(existingAnswersRaw);
+      
+      questionIds.forEach(id => {
+        if (allAnswers[id]) {
+          // 重置答題相關欄位，保留收藏狀態
+          allAnswers[id] = {
+            ...allAnswers[id],
+            isAnswered: false,
+            isCorrect: false,
+            selectedAnswer: undefined,
+            wrongCount: 0,
+          };
+        }
+      });
+      
+      await AsyncStorage.setItem(KEYS.USER_ANSWERS, JSON.stringify(allAnswers));
+    } catch (e) {
+      console.error('Failed to clear user answers', e);
+    }
+  }
 }
 

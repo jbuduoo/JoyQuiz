@@ -1,6 +1,7 @@
 //答題頁
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, SafeAreaView, useWindowDimensions, Platform, Linking } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, useWindowDimensions, Platform, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
@@ -111,8 +112,8 @@ const QuizScreen = () => {
         });
       
       case ViewMode.REVIEW:
-        // 檢視模式：只看「曾經作答過」的題目
-        return allQuestions.filter(q => userStatus[q.id]?.isAnswered);
+        // 檢視模式：顯示分類下的所有題目，不進行過濾
+        return allQuestions;
       
       case ViewMode.MOCK:
         // 模擬測驗：直接使用傳入的隨機 50 題 (在 HomeScreen 已隨機化)
@@ -140,14 +141,15 @@ const QuizScreen = () => {
         lastQuestionId.current = currentQuestion.id;
         
         const status = userStatus[currentQuestion.id];
-        // 只有在 REVIEW (檢視) 模式下，切換題目時才會自動顯示之前的作答結果
-        // 其他模式（測驗、錯題等）則保持未提交狀態，讓用戶重新思考
-        const shouldShowOldAnswer = viewMode === ViewMode.REVIEW;
+        // 進入檢視模式時，強制顯示正確答案；其他模式則根據是否已作答決定
+        const isReviewMode = viewMode === ViewMode.REVIEW;
 
-        if (status?.isAnswered && shouldShowOldAnswer) {
+        if (isReviewMode || status?.isAnswered) {
           setIsSubmitted(true);
-          if (currentQuestion.Type === '複選題') {
+          if (status?.isAnswered && currentQuestion.Type === '複選題') {
             setSelectedAnswers(status.selectedAnswer?.split(',') || []);
+          } else {
+            setSelectedAnswers([]);
           }
         } else {
           setIsSubmitted(false);
@@ -310,9 +312,10 @@ const QuizScreen = () => {
   const options = ['A', 'B', 'C', 'D', 'E'].filter(key => !!(currentQuestion as any)[key]);
   const status = userStatus[currentQuestion.id];
   const isCorrect = status?.isCorrect;
+  const isAnswered = status?.isAnswered;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
         <View style={[styles.headerInner, isLargeScreen && { width: contentWidth, alignSelf: 'center' }]}>
@@ -324,117 +327,127 @@ const QuizScreen = () => {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={[
-        styles.scrollContent,
-        isLargeScreen && { width: contentWidth, alignSelf: 'center' }
-      ]}>
-        {/* Question */}
-        <Text style={styles.questionText}>
-          {currentIndex + 1}. {currentQuestion.content}
-        </Text>
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={[
+          styles.scrollContent,
+          isLargeScreen && { width: contentWidth, alignSelf: 'center' }
+        ]}>
+          {/* Question */}
+          <Text style={styles.questionText}>
+            {currentIndex + 1}. {currentQuestion.content}
+          </Text>
 
-        {/* Options */}
-        <View style={styles.optionsContainer}>
-          {options.map((key) => {
-            const optionContent = (currentQuestion as any)[key];
-            const isSelected = currentQuestion.Type === '複選題' 
-              ? selectedAnswers.includes(key)
-              : (isSubmitted ? status?.selectedAnswer === key : false);
-            
-            const isCorrectAns = currentQuestion.Ans.split(',').includes(key);
-            
-            return (
-              <TouchableOpacity 
-                key={key} 
-                style={[
-                  styles.optionBtn,
-                  !isSubmitted && isSelected && styles.optionSelected,
-                  isSubmitted && isCorrectAns && styles.optionCorrect,
-                  isSubmitted && !isCorrectAns && isSelected && styles.optionWrong,
-                ]} 
-                onPress={() => handleOptionPress(key)}
-                disabled={(isSubmitted && currentQuestion.Type !== '複選題') || viewMode === ViewMode.REVIEW}
-              >
-                <Text style={styles.optionText}>({key}) {optionContent}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+          {/* Options */}
+          <View style={styles.optionsContainer}>
+            {options.map((key) => {
+              const optionContent = (currentQuestion as any)[key];
+              const isSelected = currentQuestion.Type === '複選題' 
+                ? selectedAnswers.includes(key)
+                : (isSubmitted ? status?.selectedAnswer === key : false);
+              
+              const isCorrectAns = currentQuestion.Ans.split(',').includes(key);
+              
+              return (
+                <TouchableOpacity 
+                  key={key} 
+                  style={[
+                    styles.optionBtn,
+                    !isSubmitted && isSelected && styles.optionSelected,
+                    isSubmitted && isCorrectAns && styles.optionCorrect,
+                    isSubmitted && !isCorrectAns && isSelected && styles.optionWrong,
+                  ]} 
+                  onPress={() => handleOptionPress(key)}
+                  disabled={(isSubmitted && currentQuestion.Type !== '複選題') || viewMode === ViewMode.REVIEW}
+                >
+                  <Text style={styles.optionText}>({key}) {optionContent}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-        {currentQuestion.Type === '複選題' && !isSubmitted && viewMode !== ViewMode.REVIEW && (
-          <TouchableOpacity style={styles.submitBtn} onPress={handleMultiSubmit}>
-            <Text style={styles.submitBtnText}>提交答案</Text>
-          </TouchableOpacity>
-        )}
+          {currentQuestion.Type === '複選題' && !isSubmitted && viewMode !== ViewMode.REVIEW && (
+            <TouchableOpacity style={styles.submitBtn} onPress={handleMultiSubmit}>
+              <Text style={styles.submitBtnText}>提交答案</Text>
+            </TouchableOpacity>
+          )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtonsRow}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleSearchQuestion}>
-            <Text style={styles.actionBtnText}>查詢問題</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleReportIssue}>
-            <Text style={styles.actionBtnText}>問題回報</Text>
-          </TouchableOpacity>
-        </View>
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleSearchQuestion}>
+              <Text style={styles.actionBtnText}>查詢問題</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleReportIssue}>
+              <Text style={styles.actionBtnText}>問題回報</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Feedback */}
-        {isSubmitted && (
-          <View style={styles.feedbackCard}>
-            <View style={styles.feedbackHeader}>
-              <Text style={[styles.feedbackStatus, isCorrect ? styles.statusCorrect : styles.statusWrong]}>
-                {isCorrect ? 'V 答對了' : 'X 答錯了'}
+          {/* Feedback */}
+          {isSubmitted && (
+            <View style={styles.feedbackCard}>
+              <View style={styles.feedbackHeader}>
+                <Text style={[
+                  styles.feedbackStatus, 
+                  isCorrect ? styles.statusCorrect : (isAnswered ? styles.statusWrong : styles.statusUnanswered)
+                ]}>
+                  {isCorrect ? 'V 答對了' : (isAnswered ? 'X 答錯了' : '○ 未作答')}
+                </Text>
+              </View>
+              <Text style={styles.correctAnswerText}>正確答案：{currentQuestion.Ans}</Text>
+              <Text style={styles.expText}>
+                {currentQuestion.exp || '暫無詳解'}
               </Text>
             </View>
-            <Text style={styles.correctAnswerText}>正確答案：{currentQuestion.Ans}</Text>
-            <Text style={styles.expText}>
-              {currentQuestion.exp || '暫無詳解'}
-            </Text>
+          )}
+        </ScrollView>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <View style={[styles.footerInner, isLargeScreen && { width: contentWidth, alignSelf: 'center' }]}>
+            <TouchableOpacity 
+              style={[styles.footerBtn, styles.btnPrev]} 
+              onPress={prevQuestion}
+              disabled={currentIndex === 0}
+            >
+              <Text style={footerStyles.footerBtnText}>上一題</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.footerBtn, styles.btnFav]} 
+              onPress={toggleFavorite}
+            >
+              <Ionicons 
+                name={status?.isFavorite ? "heart" : "heart-outline"} 
+                size={20} 
+                color={status?.isFavorite ? "#ff4d4f" : "#fff"} 
+                style={{ marginRight: 6 }}
+              />
+              <Text style={footerStyles.footerBtnText}>最愛</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.footerBtn, styles.btnNext]} 
+              onPress={nextQuestion}
+            >
+              <Text style={footerStyles.footerBtnText}>
+                {currentIndex === computedQuestions.length - 1 ? '完成' : '下一題'}
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={[styles.footerInner, isLargeScreen && { width: contentWidth, alignSelf: 'center' }]}>
-          <TouchableOpacity 
-            style={[styles.footerBtn, styles.btnPrev]} 
-            onPress={prevQuestion}
-            disabled={currentIndex === 0}
-          >
-            <Text style={styles.footerBtnText}>上一題</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.footerBtn, styles.btnFav]} 
-            onPress={toggleFavorite}
-          >
-            <Ionicons 
-              name={status?.isFavorite ? "heart" : "heart-outline"} 
-              size={20} 
-              color={status?.isFavorite ? "#ff4d4f" : "#fff"} 
-              style={{ marginRight: 6 }}
-            />
-            <Text style={styles.footerBtnText}>最愛</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.footerBtn, styles.btnNext]} 
-            onPress={nextQuestion}
-          >
-            <Text style={styles.footerBtnText}>
-              {currentIndex === computedQuestions.length - 1 ? '完成' : '下一題'}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
 };
 
+const footerStyles = {
+  footerBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' }
+};
+
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#007AFF' },
   container: { flex: 1, backgroundColor: '#fff' },
   header: { 
-    backgroundColor: '#007bff', 
+    backgroundColor: '#007AFF', 
     paddingVertical: 10, 
     paddingHorizontal: 12 
   },
@@ -442,7 +455,7 @@ const styles = StyleSheet.create({
   backBtn: { marginRight: 8 },
   headerTitle: { flex: 1, color: '#fff', fontSize: 16, fontWeight: 'bold' },
   headerProgress: { color: '#fff', fontSize: 13 },
-  scrollContent: { padding: 12, paddingBottom: 80 },
+  scrollContent: { padding: 12, paddingBottom: 100 },
   questionText: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#333' },
   optionsContainer: { marginBottom: 4 },
   optionBtn: { 
@@ -453,11 +466,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#dee2e6'
   },
-  optionSelected: { borderColor: '#007bff', backgroundColor: '#e7f1ff' },
+  optionSelected: { borderColor: '#007AFF', backgroundColor: '#e7f1ff' },
   optionCorrect: { borderColor: '#28a745', backgroundColor: '#d4edda' },
   optionWrong: { borderColor: '#dc3545', backgroundColor: '#f8d7da' },
   optionText: { fontSize: 15, color: '#333' },
-  submitBtn: { backgroundColor: '#007bff', padding: 10, borderRadius: 6, alignItems: 'center', marginBottom: 4 },
+  submitBtn: { backgroundColor: '#007AFF', padding: 10, borderRadius: 6, alignItems: 'center', marginBottom: 4 },
   submitBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   actionBtn: { 
@@ -483,6 +496,7 @@ const styles = StyleSheet.create({
   feedbackStatus: { fontSize: 16, fontWeight: 'bold' },
   statusCorrect: { color: '#28a745' },
   statusWrong: { color: '#dc3545' },
+  statusUnanswered: { color: '#666' },
   correctAnswerText: { fontSize: 15, color: '#666', marginBottom: 4 },
   expText: { fontSize: 14, color: '#444', lineHeight: 20 },
   footer: { 
@@ -505,10 +519,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 4
   },
-  btnPrev: { backgroundColor: '#007bff' },
+  btnPrev: { backgroundColor: '#007AFF' },
   btnFav: { backgroundColor: '#ffc107' },
-  btnNext: { backgroundColor: '#007bff' },
-  footerBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' }
+  btnNext: { backgroundColor: '#007AFF' },
 });
 
 export default QuizScreen;
