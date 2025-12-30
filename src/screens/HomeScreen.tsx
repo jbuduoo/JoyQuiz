@@ -159,8 +159,12 @@ const HomeScreen = () => {
     }
 
     // 計算收藏數與錯題數
+    // 修正：統一判定邏輯。錯題定義為：(曾答錯且目前非正確)。
+    // 並確保該題目 ID 存在於目前的題庫清單中 (allQuestionIds)。
     const favoriteCount = answersArray.filter(a => a.isFavorite && allQuestionIds.has(a.questionId)).length;
-    const wrongCount = answersArray.filter(a => a.isAnswered && !a.isCorrect && allQuestionIds.has(a.questionId)).length;
+    const wrongCount = answersArray.filter(a => 
+      (a.wrongCount > 0 && !a.isCorrect) && allQuestionIds.has(a.questionId)
+    ).length;
 
     const specialCategories: Category[] = [];
     
@@ -193,7 +197,7 @@ const HomeScreen = () => {
     const userAnswers = await StorageService.getUserAnswers();
     const answersArray = Object.values(userAnswers);
     
-    // 獲取所有有效的題目 ID
+    // 獲取所有有效的題目 ID，用來驗證儲存的答案是否屬於當前題庫
     const questionsIndex = require('../../assets/data/questions/questions.json');
     const isListMode = questionsIndex.config?.isQuestionListFile === true;
     
@@ -221,8 +225,12 @@ const HomeScreen = () => {
       }
     }
 
+    // 修正：統一判定邏輯。錯題定義為：(曾答錯且目前非正確)。
+    // 這樣即便在清空答案 (isAnswered = false) 後，錯題依然會保留在清單中直到被答對。
     const favoriteCount = answersArray.filter(a => a.isFavorite && allQuestionIds.has(a.questionId)).length;
-    const wrongCount = answersArray.filter(a => a.isAnswered && !a.isCorrect && allQuestionIds.has(a.questionId)).length;
+    const wrongCount = answersArray.filter(a => 
+      (a.wrongCount > 0 && !a.isCorrect) && allQuestionIds.has(a.questionId)
+    ).length;
 
     setCategories(prev => prev.map(cat => {
       if (cat.id === 'favorite') return { ...cat, total: favoriteCount };
@@ -270,11 +278,12 @@ const HomeScreen = () => {
         // 隨機選 50 題
         questions = allLoadedQuestions.sort(() => Math.random() - 0.5).slice(0, 50);
       } else if (viewMode === ViewMode.WRONG) {
-        // 篩選出歷史答錯的題目
+        // 篩選出歷史答錯且尚未答對的題目
+        // 註解：使用 (wrongCount > 0 && !isCorrect) 確保即便答案清空後，錯題仍存在。
         const userAnswers = await StorageService.getUserAnswers();
         questions = allLoadedQuestions.filter(q => {
           const status = userAnswers[q.id];
-          return status && status.isAnswered && !status.isCorrect;
+          return status && (status.wrongCount > 0 && !status.isCorrect);
         });
       } else {
         questions = allLoadedQuestions;
@@ -292,31 +301,39 @@ const HomeScreen = () => {
       }
     }
 
-    // 如果是開始新的標準測驗且該題庫已完成，則重置完成狀態與進度，並清空已作答紀錄
-    if (mode === ViewMode.QUIZ && completedMap[category.title]) {
-      await StorageService.clearCategoryCompleted(category.title);
-      await StorageService.saveProgress(category.title, 0);
+    const isSpecial = ['favorite', 'wrong', 'mock'].includes(category.id);
+    const progressKey = isSpecial ? `${viewMode}_${category.title}` : category.title;
+
+    // 如果是「開始測驗」(QUIZ) 或者是特殊練習模式 (最愛、錯題、模擬)，
+    // 且進度為 0 (代表是重新開始)，則清空該分類題目的已作答紀錄。
+    const isRestarting = (progressMap[progressKey] || 0) === 0;
+    const shouldClearAnswers = (mode === ViewMode.QUIZ || ['favorite', 'wrong', 'mock'].includes(category.id)) && isRestarting;
+
+    if (shouldClearAnswers) {
+      // 1. 如果是標準測驗且已完成，重置完成標記
+      if (mode === ViewMode.QUIZ && completedMap[category.title]) {
+        await StorageService.clearCategoryCompleted(category.title);
+        setCompletedMap(prev => {
+          const next = { ...prev };
+          delete next[category.title];
+          return next;
+        });
+      }
+
+      // 2. 清空進度歸零
+      await StorageService.saveProgress(progressKey, 0);
+      setProgressMap(prev => ({
+        ...prev,
+        [progressKey]: 0
+      }));
       
-      // 清空該分類已作答的答案
+      // 3. 核心修正：主動調用清除函數，清空該題庫所有題目的已作答 (isAnswered) 與選取答案 (selectedAnswer) 狀態。
+      // 這樣可以解決「點擊開始測驗後，答案沒有被清除」的問題。
       if (questions.length > 0) {
         await StorageService.clearUserAnswers(questions.map(q => q.id));
       }
-      
-      // 更新本地狀態，讓「檢視」按鈕立即消失，進度條歸零
-      setCompletedMap(prev => {
-        const next = { ...prev };
-        delete next[category.title];
-        return next;
-      });
-      setProgressMap(prev => ({
-        ...prev,
-        [category.title]: 0
-      }));
     }
 
-    const isSpecial = ['favorite', 'wrong', 'mock'].includes(category.id);
-    const progressKey = isSpecial ? `${viewMode}_${category.title}` : category.title;
-    
     // 跳轉至測驗頁面，並傳遞題目與起始進度
     navigation.navigate('Quiz', {
       questions,

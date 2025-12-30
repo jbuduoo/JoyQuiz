@@ -113,13 +113,11 @@ export class StorageService {
       
       questionIds.forEach(id => {
         if (allAnswers[id]) {
-          // 重置答題相關欄位，保留收藏狀態
+          // 重置答題相關欄位，保留收藏狀態、錯題次數及最後正誤紀錄
           allAnswers[id] = {
             ...allAnswers[id],
             isAnswered: false,
-            isCorrect: false,
             selectedAnswer: undefined,
-            wrongCount: 0,
           };
         }
       });

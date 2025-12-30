@@ -49,6 +49,26 @@ const QuizScreen = () => {
       
       const isReQuiz = viewMode === ViewMode.QUIZ && startIndex === 0;
 
+      // 如果是「開始測驗」(ViewMode.QUIZ 且從第 0 題開始)，
+      // 或者是模擬測驗 (MOCK)、最愛練習 (FAVORITE)、錯題複習 (WRONG)，
+      // 則需要清空這些題目在 UI 上的顯示狀態，確保進入時是第一題且答案清空。
+      const needsClearAnswers = isReQuiz || [ViewMode.MOCK, ViewMode.FAVORITE, ViewMode.WRONG].includes(viewMode);
+      
+      if (needsClearAnswers) {
+        // 這裡僅針對「當前練習範圍的題目」在記憶體狀態中標記為未作答，
+        // 確保 QuizScreen 渲染時不會顯示舊的答案。
+        // 實際的持久化清除已在 HomeScreen 啟動時或 QuizScreen 完成時處理。
+        setUserStatus(prev => {
+          const next = { ...prev };
+          allQuestions.forEach(q => {
+            if (next[q.id]) {
+              next[q.id] = { ...next[q.id], isAnswered: false, selectedAnswer: undefined };
+            }
+          });
+          return next;
+        });
+      }
+
       // 進度恢復邏輯：
       // 如果不是重新測驗，則從 Storage 讀取該模式該分類的最後練習位置
       if (!isReQuiz) {
@@ -66,7 +86,8 @@ const QuizScreen = () => {
         const filteredQuestions = allQuestions.filter(q => {
           const s = status[q.id];
           if (viewMode === ViewMode.FAVORITE) return s?.isFavorite;
-          if (viewMode === ViewMode.WRONG) return s && s.isAnswered && !s.isCorrect;
+          // 註解：錯題定義為：(曾答錯且目前非正確)。
+          if (viewMode === ViewMode.WRONG) return s && (s.wrongCount > 0 && !s.isCorrect);
           return false;
         });
         initialQuestionIds.current = filteredQuestions.map(q => q.id);
@@ -108,7 +129,8 @@ const QuizScreen = () => {
         return allQuestions.filter(q => {
           const status = userStatus[q.id];
           if (viewMode === ViewMode.FAVORITE) return status?.isFavorite;
-          return status && status.isAnswered && !status.isCorrect;
+          // 註解：保持與 HomeScreen 一致的錯題判定邏輯：(曾答錯且目前非正確)
+          return status && (status.wrongCount > 0 && !status.isCorrect);
         });
       
       case ViewMode.REVIEW:
@@ -219,18 +241,18 @@ const QuizScreen = () => {
   /**
    * 下一題邏輯：若已是最後一題，則觸發完成结算
    */
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentIndex < computedQuestions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      handleFinish();
+      await handleFinish();
     }
   };
 
   /**
    * 結算邏輯
    */
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // 檢視模式：不計算得分，直接回上一頁
     if (viewMode === ViewMode.REVIEW) {
       if (Platform.OS === 'web') {
@@ -246,8 +268,8 @@ const QuizScreen = () => {
       return;
     }
 
-    // 計算得分
-    const correctCount = computedQuestions.filter(q => userStatus[q.id]?.isCorrect).length;
+    // 計算得分：僅計算本次有作答且正確的題目
+    const correctCount = computedQuestions.filter(q => userStatus[q.id]?.isAnswered && userStatus[q.id]?.isCorrect).length;
     const totalCount = computedQuestions.length;
     const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
     
@@ -255,11 +277,16 @@ const QuizScreen = () => {
     
     // 測驗完成後，將當前進度重置為 0 (下次進入從第一題開始)
     const progressKey = viewMode === ViewMode.QUIZ ? title : `${viewMode}_${title}`;
-    StorageService.saveProgress(progressKey, 0);
+    await StorageService.saveProgress(progressKey, 0);
+    
+    // 如果是特殊模式 (最愛、錯題、模擬)，則在完成時清空這些題目的作答紀錄
+    if ([ViewMode.FAVORITE, ViewMode.WRONG, ViewMode.MOCK].includes(viewMode)) {
+      await StorageService.clearUserAnswers(computedQuestions.map(q => q.id));
+    }
     
     // 如果是主線 QUIZ 模式，則標記該分類為「已完成」，首頁會出現「檢視」按鈕
     if (viewMode === ViewMode.QUIZ) {
-      StorageService.setCategoryCompleted(title);
+      await StorageService.setCategoryCompleted(title);
     }
 
     if (Platform.OS === 'web') {
@@ -440,7 +467,7 @@ const QuizScreen = () => {
 };
 
 const footerStyles = {
-  footerBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' }
+  footerBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' as const }
 };
 
 const styles = StyleSheet.create({
