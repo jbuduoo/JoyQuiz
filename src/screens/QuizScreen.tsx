@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
-import { UserAnswer, ViewMode } from '../types';
+import { UserAnswer, ViewMode, QUIZ_CONFIGS } from '../types';
 import { StorageService } from '../services/StorageService';
 
 type QuizScreenRouteProp = RouteProp<RootStackParamList, 'Quiz'>;
@@ -20,8 +20,11 @@ const QuizScreen = () => {
     questions: allQuestions, // 傳入的所有題目
     title,                    // 題庫標題
     startIndex = 0,           // 起始題號索引
-    viewMode = ViewMode.QUIZ  // 進入模式：QUIZ(測驗), FAVORITE(最愛), WRONG(錯題), MOCK(模擬), REVIEW(檢視)
+    viewMode = ViewMode.QUIZ  // 進入模式
   } = route.params || { questions: [], title: '測驗', viewMode: ViewMode.QUIZ };
+
+  // 取得當前模式的行為策略配置 (核心策略模式實作)
+  const quizConfig = QUIZ_CONFIGS[viewMode];
 
   const [currentIndex, setCurrentIndex] = useState(0); // 當前題目在列表中的索引
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]); // 複選題選中的選項
@@ -47,17 +50,12 @@ const QuizScreen = () => {
     if (!isLoaded) {
       let initialIdx = startIndex;
       
-      const isReQuiz = viewMode === ViewMode.QUIZ && startIndex === 0;
-
-      // 如果是「開始測驗」(ViewMode.QUIZ 且從第 0 題開始)，
-      // 或者是模擬測驗 (MOCK)、最愛練習 (FAVORITE)、錯題複習 (WRONG)，
-      // 則需要清空這些題目在 UI 上的顯示狀態，確保進入時是第一題且答案清空。
-      const needsClearAnswers = isReQuiz || [ViewMode.MOCK, ViewMode.FAVORITE, ViewMode.WRONG].includes(viewMode);
+      // 判斷是否為「全新開始」的測驗 (包含首題開始的主線、模擬、收藏、錯題)
+      // 這裡僅處理 UI 顯示層級的清空，不觸發持久化清空
+      const isStartFromZero = startIndex === 0;
+      const needsClearAnswers = (viewMode === ViewMode.QUIZ && isStartFromZero) || quizConfig.clearOnFinish;
       
       if (needsClearAnswers) {
-        // 這裡僅針對「當前練習範圍的題目」在記憶體狀態中標記為未作答，
-        // 確保 QuizScreen 渲染時不會顯示舊的答案。
-        // 實際的持久化清除已在 HomeScreen 啟動時或 QuizScreen 完成時處理。
         setUserStatus(prev => {
           const next = { ...prev };
           allQuestions.forEach(q => {
@@ -69,9 +67,8 @@ const QuizScreen = () => {
         });
       }
 
-      // 進度恢復邏輯：
-      // 如果不是重新測驗，則從 Storage 讀取該模式該分類的最後練習位置
-      if (!isReQuiz) {
+      // 進度恢復邏輯：僅在 saveProgress 為 true 時讀取上次題號
+      if (quizConfig.saveProgress && !isStartFromZero) {
         const progress = await StorageService.getProgress();
         const progressKey = viewMode === ViewMode.QUIZ ? title : `${viewMode}_${title}`;
         const savedIndex = progress[progressKey];
@@ -163,10 +160,9 @@ const QuizScreen = () => {
         lastQuestionId.current = currentQuestion.id;
         
         const status = userStatus[currentQuestion.id];
-        // 進入檢視模式時，強制顯示正確答案；其他模式則根據是否已作答決定
-        const isReviewMode = viewMode === ViewMode.REVIEW;
-
-        if (isReviewMode || status?.isAnswered) {
+        
+        // 根據配置決定是否直接顯示答案 (例如檢視模式) 或已作答過的題目
+        if (quizConfig.showExpDirectly || status?.isAnswered) {
           setIsSubmitted(true);
           if (status?.isAnswered && currentQuestion.Type === '複選題') {
             setSelectedAnswers(status.selectedAnswer?.split(',') || []);
@@ -179,18 +175,19 @@ const QuizScreen = () => {
         }
       }
       
-      // 進度記憶：只要不是檢視模式，切換題目就會立刻記錄當前索引，方便下次「繼續測驗」
-      if (viewMode !== ViewMode.REVIEW) {
+      // 進度記憶：若模式允許存檔，則切換題目時自動記錄索引
+      if (quizConfig.saveProgress) {
         const progressKey = viewMode === ViewMode.QUIZ ? title : `${viewMode}_${title}`;
         StorageService.saveProgress(progressKey, currentIndex);
       }
     }
-  }, [currentIndex, currentQuestion, userStatus, viewMode, title, startIndex]);
+  }, [currentIndex, currentQuestion, userStatus, viewMode, title, startIndex, quizConfig]);
 
   const handleOptionPress = (option: string) => {
-    // REVIEW 模式禁用點擊
-    if (viewMode === ViewMode.REVIEW) return;
+    // 唯讀模式下禁用所有點擊交互
+    if (quizConfig.isReadOnly) return;
     
+    // 若非複選題且已提交答案，則禁止再次點擊
     if (isSubmitted && currentQuestion.Type !== '複選題') return;
 
     if (currentQuestion.Type === '複選題') {
@@ -250,20 +247,19 @@ const QuizScreen = () => {
   };
 
   /**
-   * 結算邏輯
+   * 結算邏輯：根據模式策略執行不同的完成行為
    */
   const handleFinish = async () => {
-    // 檢視模式：不計算得分，直接回上一頁
-    if (viewMode === ViewMode.REVIEW) {
+    // 唯讀模式 (如檢視)：不計算得分，直接回上一頁
+    if (quizConfig.isReadOnly) {
+      const exitTitle = '完成檢視';
+      const exitMsg = '您已完成檢視';
+      
       if (Platform.OS === 'web') {
-        alert('您已完成檢視');
+        alert(exitMsg);
         navigation.goBack();
       } else {
-        Alert.alert(
-          '完成檢視',
-          '您已完成檢視',
-          [{ text: '確定', onPress: () => navigation.goBack() }]
-        );
+        Alert.alert(exitTitle, exitMsg, [{ text: '確定', onPress: () => navigation.goBack() }]);
       }
       return;
     }
@@ -275,16 +271,16 @@ const QuizScreen = () => {
     
     const message = `答對題數：${correctCount}\n總題數：${totalCount}\n得分：${score} 分`;
     
-    // 測驗完成後，將當前進度重置為 0 (下次進入從第一題開始)
+    // 測驗完成後，將進度歸零
     const progressKey = viewMode === ViewMode.QUIZ ? title : `${viewMode}_${title}`;
     await StorageService.saveProgress(progressKey, 0);
     
-    // 如果是特殊模式 (最愛、錯題、模擬)，則在完成時清空這些題目的作答紀錄
-    if ([ViewMode.FAVORITE, ViewMode.WRONG, ViewMode.MOCK].includes(viewMode)) {
+    // 執行模式策略：是否在完成後清空作答紀錄 (針對練習型模式)
+    if (quizConfig.clearOnFinish) {
       await StorageService.clearUserAnswers(computedQuestions.map(q => q.id));
     }
     
-    // 如果是主線 QUIZ 模式，則標記該分類為「已完成」，首頁會出現「檢視」按鈕
+    // 若為標準測驗，標記該分類為已通關
     if (viewMode === ViewMode.QUIZ) {
       await StorageService.setCategoryCompleted(title);
     }
@@ -383,20 +379,20 @@ const QuizScreen = () => {
                     isSubmitted && isCorrectAns && styles.optionCorrect,
                     isSubmitted && !isCorrectAns && isSelected && styles.optionWrong,
                   ]} 
-                  onPress={() => handleOptionPress(key)}
-                  disabled={(isSubmitted && currentQuestion.Type !== '複選題') || viewMode === ViewMode.REVIEW}
-                >
-                  <Text style={styles.optionText}>({key}) {optionContent}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                onPress={() => handleOptionPress(key)}
+                disabled={(isSubmitted && currentQuestion.Type !== '複選題') || quizConfig.isReadOnly}
+              >
+                <Text style={styles.optionText}>({key}) {optionContent}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-          {currentQuestion.Type === '複選題' && !isSubmitted && viewMode !== ViewMode.REVIEW && (
-            <TouchableOpacity style={styles.submitBtn} onPress={handleMultiSubmit}>
-              <Text style={styles.submitBtnText}>提交答案</Text>
-            </TouchableOpacity>
-          )}
+        {currentQuestion.Type === '複選題' && !isSubmitted && !quizConfig.isReadOnly && (
+          <TouchableOpacity style={styles.submitBtn} onPress={handleMultiSubmit}>
+            <Text style={styles.submitBtnText}>提交答案</Text>
+          </TouchableOpacity>
+        )}
 
           {/* Action Buttons */}
           <View style={styles.actionButtonsRow}>

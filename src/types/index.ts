@@ -8,6 +8,67 @@ export enum ViewMode {
   WRONG = 'WRONG',
 }
 
+/**
+ * 測驗模式行為策略配置
+ */
+export interface QuizModeConfig {
+  mode: ViewMode;
+  canAnswer: boolean;          // 是否允許作答
+  showAnswerInstantly: boolean; // 是否在作答後立即顯示答案與詳解
+  showExpDirectly: boolean;    // 是否直接顯示詳解 (不需作答)
+  saveProgress: boolean;       // 是否紀錄最後練習題號
+  isReadOnly: boolean;         // 介面是否為唯讀
+  clearOnFinish: boolean;      // 完成後是否清除本次作答數據
+}
+
+export const QUIZ_CONFIGS: Record<ViewMode, QuizModeConfig> = {
+  [ViewMode.QUIZ]: {
+    mode: ViewMode.QUIZ,
+    canAnswer: true,
+    showAnswerInstantly: true,
+    showExpDirectly: false,
+    saveProgress: true,
+    isReadOnly: false,
+    clearOnFinish: false,
+  },
+  [ViewMode.REVIEW]: {
+    mode: ViewMode.REVIEW,
+    canAnswer: false,
+    showAnswerInstantly: true,
+    showExpDirectly: true,
+    saveProgress: false,
+    isReadOnly: true,
+    clearOnFinish: false,
+  },
+  [ViewMode.FAVORITE]: {
+    mode: ViewMode.FAVORITE,
+    canAnswer: true,
+    showAnswerInstantly: true,
+    showExpDirectly: false,
+    saveProgress: true,
+    isReadOnly: false,
+    clearOnFinish: true,
+  },
+  [ViewMode.WRONG]: {
+    mode: ViewMode.WRONG,
+    canAnswer: true,
+    showAnswerInstantly: true,
+    showExpDirectly: false,
+    saveProgress: true,
+    isReadOnly: false,
+    clearOnFinish: true,
+  },
+  [ViewMode.MOCK]: {
+    mode: ViewMode.MOCK,
+    canAnswer: true,
+    showAnswerInstantly: true,
+    showExpDirectly: false,
+    saveProgress: true,
+    isReadOnly: false,
+    clearOnFinish: true,
+  },
+};
+
 export interface Question {
   id: string;              // 格式：{series_no}_{Id}
   content: string;         // 題目內文

@@ -9,7 +9,7 @@ import { RootStackParamList } from '../navigation';
 import { StorageService } from '../services/StorageService';
 import { QuestionService } from '../services/QuestionService';
 import { getQuestionData } from '../utils/questionLoader';
-import { Question, ViewMode } from '../types';
+import { Question, ViewMode, QUIZ_CONFIGS } from '../types';
 
 interface QuestionListItem {
   series_no: string;
@@ -240,17 +240,16 @@ const HomeScreen = () => {
   };
 
   /**
-   * 點擊題庫後的處理邏輯
-   * @param category 選中的題庫分類
-   * @param mode 進入模式 (測驗或複習)
+   * 啟動測驗 Session (Session Launcher)
+   * 負責處理進入測驗前的資料準備、進度讀取與環境清理
    */
   const handleStartQuiz = async (category: Category, mode: ViewMode = ViewMode.QUIZ) => {
     let questions: Question[] = [];
     let viewMode = mode;
+    const quizConfig = QUIZ_CONFIGS[viewMode];
 
-    // 處理特殊題庫 (最愛、錯題、模擬、複習)
+    // 1. 題目準備階段
     if (category.id === 'favorite' || category.id === 'review' || category.id === 'wrong' || category.id === 'mock') {
-      // 確定 ViewMode
       if (category.id === 'favorite') viewMode = ViewMode.FAVORITE;
       if (category.id === 'wrong') viewMode = ViewMode.WRONG;
       if (category.id === 'mock') viewMode = ViewMode.MOCK;
@@ -258,7 +257,6 @@ const HomeScreen = () => {
       const questionsIndex = require('../../assets/data/questions/questions.json');
       let allLoadedQuestions: Question[] = [];
       
-      // 載入所有題庫內容以進行篩選
       const filesToProcess = questionsIndex.config?.isQuestionListFile === true
         ? (questionsIndex.questionListFiles || []).flatMap((g: any) => g.items.map((i: any) => ({ displayName: i.displayName, id: i.series_no, fileName: i.file })))
         : (questionsIndex.questionFiles || []).filter((f: any) => f.isQuestionFile === true);
@@ -275,11 +273,8 @@ const HomeScreen = () => {
       }
 
       if (viewMode === ViewMode.MOCK) {
-        // 隨機選 50 題
         questions = allLoadedQuestions.sort(() => Math.random() - 0.5).slice(0, 50);
       } else if (viewMode === ViewMode.WRONG) {
-        // 篩選出歷史答錯且尚未答對的題目
-        // 註解：使用 (wrongCount > 0 && !isCorrect) 確保即便答案清空後，錯題仍存在。
         const userAnswers = await StorageService.getUserAnswers();
         questions = allLoadedQuestions.filter(q => {
           const status = userAnswers[q.id];
@@ -289,7 +284,6 @@ const HomeScreen = () => {
         questions = allLoadedQuestions;
       }
     } else if (category.fileName) {
-      // 一般題庫載入
       try {
         const rawData = getQuestionData(category.fileName);
         questions = await QuestionService.loadQuestionsFromStatic(rawData, {
@@ -301,45 +295,36 @@ const HomeScreen = () => {
       }
     }
 
+    // 2. 策略執行階段 (Session Initialization)
     const isSpecial = ['favorite', 'wrong', 'mock'].includes(category.id);
     const progressKey = isSpecial ? `${viewMode}_${category.title}` : category.title;
+    const currentProgress = progressMap[progressKey] || 0;
 
-    // 如果是「開始測驗」(QUIZ) 或者是特殊練習模式 (最愛、錯題、模擬)，
-    // 且進度為 0 (代表是重新開始)，則清空該分類題目的已作答紀錄。
-    const isRestarting = (progressMap[progressKey] || 0) === 0;
-    const shouldClearAnswers = (mode === ViewMode.QUIZ || ['favorite', 'wrong', 'mock'].includes(category.id)) && isRestarting;
+    // 決定是否為「全新開始」：(進度為0) 或是 (模式策略要求完成後清除)
+    const isRestarting = currentProgress === 0;
+    const shouldClearAnswers = (mode === ViewMode.QUIZ || quizConfig.clearOnFinish) && isRestarting;
 
     if (shouldClearAnswers) {
-      // 1. 如果是標準測驗且已完成，重置完成標記
+      // 若是主線測驗重新開始，清除「已完成」標記
       if (mode === ViewMode.QUIZ && completedMap[category.title]) {
         await StorageService.clearCategoryCompleted(category.title);
-        setCompletedMap(prev => {
-          const next = { ...prev };
-          delete next[category.title];
-          return next;
-        });
       }
 
-      // 2. 清空進度歸零
+      // 重置進度索引
       await StorageService.saveProgress(progressKey, 0);
-      setProgressMap(prev => ({
-        ...prev,
-        [progressKey]: 0
-      }));
       
-      // 3. 核心修正：主動調用清除函數，清空該題庫所有題目的已作答 (isAnswered) 與選取答案 (selectedAnswer) 狀態。
-      // 這樣可以解決「點擊開始測驗後，答案沒有被清除」的問題。
+      // 抹除作答紀錄痕跡，確保進入後是「空白」狀態
       if (questions.length > 0) {
         await StorageService.clearUserAnswers(questions.map(q => q.id));
       }
     }
 
-    // 跳轉至測驗頁面，並傳遞題目與起始進度
+    // 3. 導向階段
     navigation.navigate('Quiz', {
       questions,
       title: category.title,
       viewMode,
-      startIndex: viewMode === ViewMode.REVIEW ? 0 : (progressMap[progressKey] || 0)
+      startIndex: quizConfig.saveProgress ? (progressMap[progressKey] || 0) : 0
     });
   };
 
