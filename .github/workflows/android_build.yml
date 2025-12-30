@@ -65,11 +65,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Build release AAB
+    - name: Build release AAB and APK
       working-directory: android
       env:
         JAVA_HOME: ${{ env.JAVA_HOME }}
-      run: ./gradlew bundleRelease --no-daemon
+      run: ./gradlew bundleRelease assembleRelease --no-daemon
 
     - name: Upload release AAB
       uses: actions/upload-artifact@v4
@@ -77,3 +77,8 @@ jobs:
         name: release-aab
         path: android/app/build/outputs/bundle/release/app-release.aab
 
+    - name: Upload release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-apk
+        path: android/app/build/outputs/apk/release/app-release.apk
