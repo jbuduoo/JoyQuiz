@@ -152,6 +152,24 @@ android {
     }
 }
 
+// 修正 Expo 51 在 Android SDK 35 下的編譯錯誤
+task patchExpoPermissions {
+    doLast {
+        def filePath = "../../node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt"
+        def file = file(filePath)
+        if (file.exists()) {
+            def content = file.text
+            def oldLine = "return requestedPermissions.contains(permission)"
+            def newLine = "return requestedPermissions?.contains(permission) ?: false"
+            if (content.contains(oldLine)) {
+                file.text = content.replace(oldLine, newLine)
+                println "成功修復 expo-modules-core 的 SDK 35 相容性問題"
+            }
+        }
+    }
+}
+preBuild.dependsOn patchExpoPermissions
+
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
 // Accepts values in comma delimited lists, example:
 // android.packagingOptions.pickFirsts=/LICENSE,**/picasa.ini
