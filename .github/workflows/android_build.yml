@@ -66,8 +66,14 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Decode Keystore
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       run: |
-        echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+        echo "$ANDROID_KEYSTORE_BASE64" | tr -d '\n ' | base64 --decode > android/app/release.keystore
+        if [ ! -s android/app/release.keystore ]; then
+          echo "Error: Keystore file is empty!"
+          exit 1
+        fi
 
     - name: Build release AAB and APK
       working-directory: android
