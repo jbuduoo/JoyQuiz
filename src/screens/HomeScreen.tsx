@@ -492,10 +492,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...(Platform.OS === 'web' 
+      ? { boxShadow: '0px 1px 2px rgba(0,0,0,0.1)' } 
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+        }
+    ),
   },
   headerTitle: { 
     fontSize: 22, 
@@ -511,10 +516,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     alignItems: 'center',
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 1px rgba(0,0,0,0.05)' }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 1,
+        }
+    ),
     elevation: 1,
   },
   cardLarge: {
