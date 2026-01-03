@@ -114,8 +114,8 @@ android {
         applicationId 'com.jbuduoo.joyquiz'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "1.0.7"
+        versionCode 9
+        versionName "1.0.8"
     }
     signingConfigs {
         debug {
@@ -139,8 +139,8 @@ android {
         }
         release {
             signingConfig signingConfigs.release
-            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
-            minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources false
+            minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
         }
