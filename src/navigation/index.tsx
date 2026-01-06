@@ -3,10 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import QuizScreen from '../screens/QuizScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import { Question, ViewMode } from '../types';
 
 export type RootStackParamList = {
   Home: undefined;
+  Settings: undefined;
   Quiz: { 
     questions: Question[]; 
     title: string;
@@ -29,6 +31,11 @@ export default function Navigation() {
         <Stack.Screen 
           name="Quiz" 
           component={QuizScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen} 
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

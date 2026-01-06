@@ -419,6 +419,9 @@ const QuizScreen = () => {
               <Text style={styles.expText}>
                 {currentQuestion.exp || '暫無詳解'}
               </Text>
+              <Text style={styles.aiDisclaimerText}>
+                本解析由 AI 輔助生成，內容僅供參考，請以最新採購法條文為準。
+              </Text>
             </View>
           )}
         </ScrollView>
@@ -522,6 +525,15 @@ const styles = StyleSheet.create({
   statusUnanswered: { color: '#666' },
   correctAnswerText: { fontSize: 15, color: '#666', marginBottom: 4 },
   expText: { fontSize: 14, color: '#444', lineHeight: 20 },
+  aiDisclaimerText: { 
+    fontSize: 11, 
+    color: '#8E8E93', 
+    marginTop: 12, 
+    textAlign: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E5EA',
+    paddingTop: 8,
+  },
   footer: { 
     position: 'absolute', 
     bottom: 0, 

@@ -436,7 +436,14 @@ const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
+        <View style={styles.headerLeft} />
         <Text style={styles.headerTitle}>{headerTitle}</Text>
+        <TouchableOpacity 
+          style={styles.headerRight} 
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Text style={styles.settingsButtonText}>設定</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.container}>
         <ScrollView 
@@ -489,8 +496,10 @@ const styles = StyleSheet.create({
   header: { 
     height: Platform.OS === 'web' ? 60 : 50,
     backgroundColor: '#007AFF', 
-    justifyContent: 'center', 
+    flexDirection: 'row',
+    justifyContent: 'space-between', 
     alignItems: 'center',
+    paddingHorizontal: 16,
     elevation: 4,
     ...(Platform.OS === 'web' 
       ? { boxShadow: '0px 1px 2px rgba(0,0,0,0.1)' } 
@@ -501,6 +510,19 @@ const styles = StyleSheet.create({
           shadowRadius: 2,
         }
     ),
+  },
+  headerLeft: {
+    width: 40,
+  },
+  headerRight: {
+    width: 40,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  settingsButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
   },
   headerTitle: { 
     fontSize: 22, 
