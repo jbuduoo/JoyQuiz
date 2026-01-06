@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const [showDisclaimer, setShowDisclaimer] = React.useState(false);
+  const [showCooperation, setShowCooperation] = React.useState(false);
 
   if (showDisclaimer) {
     return (
@@ -47,6 +48,46 @@ const SettingsScreen = () => {
     );
   }
 
+  if (showCooperation) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => setShowCooperation(false)}
+          >
+            <Text style={styles.headerButtonText}>返回</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>名師合作</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          <Text style={styles.title}>【名師/內容合作計劃】</Text>
+          
+          <Text style={styles.paragraph}>
+            您是專業講師或內容創作者嗎？「樂題庫」誠邀各類考試（公職、證照、升學）名師共同開發！
+          </Text>
+          
+          <Text style={styles.sectionTitle}>為什麼選擇與我們合作？</Text>
+          <Text style={styles.paragraph}>• 專業開發團隊：為您的題庫量身打造流暢的數位練習體驗。</Text>
+          <Text style={styles.paragraph}>• AI 輔助技術：結合生成式 AI 輔助詳解，縮短教材製作週期。</Text>
+          <Text style={styles.paragraph}>• 精準用戶群：與數萬名考生直接建立連結。</Text>
+          
+          <Text style={styles.sectionTitle}>目前熱徵科目：</Text>
+          <Text style={styles.paragraph}>法學緒論、行政法、會計學、醫護證照等各類專業學門。</Text>
+          
+          <Text style={styles.sectionTitle}>立即洽詢：</Text>
+          <Text style={styles.paragraph}>
+            Email: <Text style={styles.link} onPress={() => Linking.openURL('mailto:jbubuoo@gmail.com')}>jbubuoo@gmail.com</Text>
+            {"\n"}
+            Line: <Text style={styles.link} onPress={() => Linking.openURL('https://line.me/ti/p/~jbud')}>jbud</Text>
+          </Text>
+          <Text style={styles.paragraph}>我們將於 3 個工作天內由專人與您聯繫。</Text>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -65,6 +106,14 @@ const SettingsScreen = () => {
           onPress={() => setShowDisclaimer(true)}
         >
           <Text style={styles.itemText}>政府資訊來源與免責聲明</Text>
+          <Text style={styles.itemArrow}>▶</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.item} 
+          onPress={() => setShowCooperation(true)}
+        >
+          <Text style={styles.itemText}>名師/內容合作計劃</Text>
           <Text style={styles.itemArrow}>▶</Text>
         </TouchableOpacity>
       </View>
