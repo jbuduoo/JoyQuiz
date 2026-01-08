@@ -1,54 +1,27 @@
 # Android Debug 流程與修復記錄
 
-本文件記錄了 React Native 0.81.5 與 Expo 54 專案在 Android 編譯及運行過程中遇到的問題與解決方案。
+## 板本用市面上穩定的板本。
+-  環境參數：目前專案所使用的穩定版本清單。
+## 開啟apk除錯模式。
 
-## 1. 編譯期錯誤 (Build Errors)
-
-### 問題 A: Node.js 版本過低
-*   **錯誤訊息**: `TypeError: configs.toReversed is not a function`
-*   **原因**: `toReversed()` 是 Node.js 20+ 才支援的語法，GitHub Actions 預設使用的 Node 18 不支援。
-*   **解決方案**: 更新 `.github/workflows/android_build.yml`，將 `node-version` 提升至 `22`。
-
-### 問題 B: Expo Gradle 插件相容性
-*   **錯誤訊息**: `Unresolved reference 'extensions'` 或 `Unresolved reference 'extra'`
-*   **原因**: Expo 54 的內部插件使用了 Gradle 8.8+ 已移除的內部 API。
-*   **解決方案**: 在 `android/settings.gradle` 中加入熱修復腳本，動態將 `extra` 替換為 `extensions.extraProperties`。
-
-### 問題 C: Gradle 與 AGP 版本不匹配
-*   **錯誤訊息**: `Minimum supported Gradle version is 8.13. Current version is 8.10.2.`
-*   **原因**: React Native 0.81.5 使用的 Android Gradle Plugin (AGP) 8.11.0 需要更高版本的 Gradle。
-*   **解決方案**: 
-    *   `gradle-wrapper.properties` 升級至 `8.13`。
-    *   `android/build.gradle` 指定 AGP 為 `8.11.0`。
-    *   CI 環境升級至 **JDK 21**。
-
-### 問題 D: 自動連結 (Autolinking) 找不到封裝名稱
-*   **錯誤訊息**: `Could not find project.android.packageName in react-native config output!`
-*   **原因**: React Native CLI 無法從 Gradle 檔案中自動偵測 `packageName`。
-*   **解決方案**: 
-    *   在 `android/app/src/main/AndroidManifest.xml` 補上 `package="com.jbuduoo.joyquiz"`。
-    *   建立 `react-native.config.js` 並指定 `sourceDir: './android'`。
-
----
-
-## 2. 運行期錯誤 (Runtime Crashes)
-
-### 問題 E: AdMob 初始化崩潰 (閃退主因)
-*   **錯誤日誌**: 
-    ```
-    java.lang.RuntimeException: Unable to get provider com.google.android.gms.ads.MobileAdsInitProvider: 
-    java.lang.IllegalStateException: Invalid application ID.
-    ```
-*   **原因**: `react-native-google-mobile-ads` 要求在 `AndroidManifest.xml` 中必須有 `APPLICATION_ID` 的元數據。
-*   **解決方案**: 在 `AndroidManifest.xml` 的 `<application>` 標籤中手動加入：
-    ```xml
-    <meta-data
-        android:name="com.google.android.gms.ads.APPLICATION_ID"
-        android:value="ca-app-pub-2743734879673730~8116708793"/>
-    ```
-
----
-
+## 手機用開發者模式。
+為什麼會閃退？
+因為 Debug APK 必須配合 Metro 運作。請確認以下步驟：
+啟動 Metro：在你的電腦終端機執行：
+    npx expo start
+確保手機連線：
+執行你之前成功的反向代理指令：
+    C:\Users\wits\Downloads\platform-tools\adb.exe reverse tcp:8081 tcp:8081
+重新打開 App：這時你應該會看到手機螢幕顯示 Loading... 或 Bundling... 的進度條。
+如果你想要抓到真正的閃退原因，請這樣做：
+目前 Log 太亂了，請在你的 PowerShell 執行以下「清理並抓取」指令：
+清除舊日誌：
+    C:\Users\wits\Downloads\platform-tools\adb.exe logcat -c
+開啟 App 直到它閃退。
+抓取崩潰專用日誌：
+    C:\Users\wits\Downloads\platform-tools\adb.exe logcat *:E | Select-String "AndroidRuntime", "FATAL", "com.jbuduoo.joyquiz"
+💡
+除錯工具：常用的 adb 指令與抓取 Log 的方法。
 ## 3. 常用除錯指令
 
 ### 反向代理 (使手機連上 Metro)
@@ -67,6 +40,18 @@ cd android
 ./gradlew clean
 cd ..
 ```
+這代表 adb 反向代理已成功建立！現在你的手機已經可以透過 USB 連接線讀取到電腦上的 Metro 服務了。
+接下來請按照以下步驟操作：
+1. 啟動 Metro 服務
+在電腦終端機執行：
+npx expo start
+（如果之前已經在跑了，請按 r 重啟）
+2. 開啟手機上的 App
+在手機上點開剛剛安裝的 Debug APK。
+如果連線成功：你會看到手機螢幕開始加載 JS Bundle。
+如果 JS 有錯：手機螢幕會直接彈出紅色警告視窗。
+3. 查看 Log 記錄
+如果你想在電腦上看到詳細的錯誤日誌（尤其是閃退時的原生錯誤），請執行：
 
 ---
 
