@@ -22,6 +22,22 @@
     C:\Users\wits\Downloads\platform-tools\adb.exe logcat *:E | Select-String "AndroidRuntime", "FATAL", "com.jbuduoo.joyquiz"
 💡
 除錯工具：常用的 adb 指令與抓取 Log 的方法。
+## 2. 運行期錯誤 (Runtime Crashes)
+
+### 問題 E: AdMob 初始化崩潰 (已修復)
+*   **錯誤日誌**: `java.lang.IllegalStateException: Invalid application ID.`
+*   **原因**: 缺少 AdMob App ID。
+*   **解決方案**: 在 `AndroidManifest.xml` 加入 `<meta-data>` 並使用 `tools:replace="android:value"`。
+
+### 問題 F: 原生庫缺失 (libreact_featureflagsjni.so)
+*   **錯誤日誌**: `com.facebook.soloader.SoLoaderDSONotFoundError: couldn't find DSO to load: libreact_featureflagsjni.so`
+*   **原因**: React Native 0.81+ 的新架構元件在某些裝置上無法正確加載。
+*   **解決方案**: 
+    1. 在 `android/gradle.properties` 設定 `expo.useLegacyPackaging=true`。
+    2. 確保 `AndroidManifest.xml` 的 `<application>` 標籤包含 `android:extractNativeLibs="true"`。
+
+---
+
 ## 3. 常用除錯指令
 
 ### 反向代理 (使手機連上 Metro)
