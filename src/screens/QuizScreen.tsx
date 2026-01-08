@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
 import { UserAnswer, ViewMode, QUIZ_CONFIGS } from '../types';
 import { StorageService } from '../services/StorageService';
+import AdBanner from '../components/AdBanner';
 
 type QuizScreenRouteProp = RouteProp<RootStackParamList, 'Quiz'>;
 
@@ -351,10 +352,13 @@ const QuizScreen = () => {
       </View>
 
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={[
-          styles.scrollContent,
-          isLargeScreen && { width: contentWidth, alignSelf: 'center' }
-        ]}>
+        <ScrollView 
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isLargeScreen && { width: contentWidth, alignSelf: 'center' }
+          ]}
+        >
           {/* Question */}
           <Text style={styles.questionText}>
             {currentIndex + 1}. {currentQuestion.content}
@@ -460,6 +464,7 @@ const QuizScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
+        <AdBanner />
       </View>
     </SafeAreaView>
   );
@@ -481,7 +486,7 @@ const styles = StyleSheet.create({
   backBtn: { marginRight: 8 },
   headerTitle: { flex: 1, color: '#fff', fontSize: 16, fontWeight: 'bold' },
   headerProgress: { color: '#fff', fontSize: 13 },
-  scrollContent: { padding: 12, paddingBottom: 100 },
+  scrollContent: { padding: 12, paddingBottom: 20 },
   questionText: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#333' },
   optionsContainer: { marginBottom: 4 },
   optionBtn: { 
@@ -535,10 +540,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   footer: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',

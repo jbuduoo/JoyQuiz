@@ -230,7 +230,26 @@ dependencies {
     }
 }
 
-if (rnVersion < versionToNumber(0, 75, 0)) {
+    if (rnVersion < versionToNumber(0, 75, 0)) {
     apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
     applyNativeModulesAppBuildGradle(project)
 }
+
+task updateAdConfig {
+    doLast {
+        // 檢查當前執行的任務名稱中是否包含 "bundle" (通常是 bundleRelease)
+        def isBundle = project.gradle.startParameter.taskNames.any { it.contains("bundle") }
+        def envFile = file("../../.env.local")
+        
+        // 將模式寫入 EXPO_PUBLIC_ 變數，Expo 會自動將其注入 JS 環境
+        envFile.text = "EXPO_PUBLIC_AD_MODE=${isBundle ? 'production' : 'test'}\n"
+        
+        println "--------------------------------------------------"
+        println "廣告編譯模式偵測: ${isBundle ? '正式版 (AAB)' : '測試版 (APK)'}"
+        println "已更新 .env.local 檔案"
+        println "--------------------------------------------------"
+    }
+}
+
+// 確保在編譯前執行此任務
+preBuild.dependsOn updateAdConfig

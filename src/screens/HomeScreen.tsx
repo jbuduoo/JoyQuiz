@@ -10,6 +10,7 @@ import { StorageService } from '../services/StorageService';
 import { QuestionService } from '../services/QuestionService';
 import { getQuestionData } from '../utils/questionLoader';
 import { Question, ViewMode, QUIZ_CONFIGS } from '../types';
+import AdBanner from '../components/AdBanner';
 
 interface QuestionListItem {
   series_no: string;
@@ -447,6 +448,7 @@ const HomeScreen = () => {
       </View>
       <View style={styles.container}>
         <ScrollView 
+          style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
         >
           {isQuestionListMode ? (
@@ -458,6 +460,7 @@ const HomeScreen = () => {
             categories.map(renderCategoryCard)
           )}
         </ScrollView>
+        <AdBanner />
       </View>
     </SafeAreaView>
   );
