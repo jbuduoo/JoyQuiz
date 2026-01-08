@@ -69,8 +69,8 @@ def patchExpoGradlePlugin = {
             def content = f.text
             def oldImport = "import org.gradle.internal.extensions.core.extra"
             if (content.contains(oldImport)) {
-                content = content.replace(oldImport, "import org.gradle.api.plugins.ExtensionAware")
-                content = content.replace(".extra", ".extensions.extraProperties")
+                content = content.replace(oldImport, "")
+                content = content.replace("extra.", "extensions.extraProperties.")
                 f.text = content
                 println "成功修復 ${f.name} 的 Gradle 8.8+ 相容性問題"
             }
