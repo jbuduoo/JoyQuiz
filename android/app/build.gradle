@@ -163,7 +163,7 @@ android {
     }
 }
 
-// 修正 Expo 51 在 Android SDK 35 下的編譯錯誤
+// 修正 Expo 54 在 Android SDK 35/36 下的編譯錯誤
 task patchExpoPermissions {
     doLast {
         def filePath = "../../node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt"

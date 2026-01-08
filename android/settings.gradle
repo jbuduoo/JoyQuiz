@@ -55,6 +55,30 @@ dependencyResolutionManagement {
 }
 
 apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+
+// 修正 Expo 54 在 Gradle 8.8+ 下的編譯錯誤 (由內部 API 變更引起)
+def patchExpoGradlePlugin = {
+    def pluginFiles = [
+        "../node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExpoModulesGradlePlugin.kt",
+        "../node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt",
+        "../node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/gradle/ExpoModuleExtension.kt"
+    ]
+    pluginFiles.each { path ->
+        def f = new File(rootDir, path)
+        if (f.exists()) {
+            def content = f.text
+            def oldImport = "import org.gradle.internal.extensions.core.extra"
+            if (content.contains(oldImport)) {
+                content = content.replace(oldImport, "import org.gradle.api.plugins.ExtensionAware")
+                content = content.replace(".extra", ".extensions.extraProperties")
+                f.text = content
+                println "成功修復 ${f.name} 的 Gradle 8.8+ 相容性問題"
+            }
+        }
+    }
+}
+patchExpoGradlePlugin()
+
 useExpoModules()
 
 if (getRNMinorVersion() < 75) {
