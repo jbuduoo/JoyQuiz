@@ -29,13 +29,14 @@
 *   **原因**: 缺少 AdMob App ID。
 *   **解決方案**: 在 `AndroidManifest.xml` 加入 `<meta-data>` 並使用 `tools:replace="android:value"`。
 
-### 問題 F: 原生庫缺失 (libreact_featureflagsjni.so) - 已加強修復
+### 問題 F: 原生庫缺失 (libreact_featureflagsjni.so) - 已針對 RN 0.81.5 優化
 *   **錯誤日誌**: `com.facebook.soloader.SoLoaderDSONotFoundError: couldn't find DSO to load: libreact_featureflagsjni.so`
-*   **原因**: React Native 0.81+ 的新架構元件在安裝時未被正確提取。
+*   **原因**: React Native 0.81.5 引入了新的核心組件。在 Android 14+ 設備上，使用 `useLegacyPackaging=true` 可能導致 `SoLoader` 無法在 `/data/user/0/` 下創建 `dso_lock` 文件，進而無法解壓並加載該庫。
 *   **解決方案**: 
-    1. 在 `android/gradle.properties` 設定 `expo.useLegacyPackaging=true`。
-    2. 在 `AndroidManifest.xml` 的 `<application>` 標籤加入 `android:extractNativeLibs="true"`。
-    3. **重要**：安裝前必須先「手動解除安裝」舊版 App，否則系統不會重新執行提取動作。
+    1. 在 `android/gradle.properties` 設置 `expo.useLegacyPackaging=false`（改用現代頁面對齊讀取模式）。
+    2. 在 `AndroidManifest.xml` 的 `<application>` 標籤中設置 `android:extractNativeLibs="false"`。
+    3. 在 `MainApplication.kt` 中將 `SoLoader.init(this, false)` 改為 `SoLoader.init(this, true)`。
+    4. **重要**：安裝前必須先「手動解除安裝」舊版 App。
 
 ---
 
