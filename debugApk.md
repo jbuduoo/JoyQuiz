@@ -29,12 +29,13 @@
 *   **原因**: 缺少 AdMob App ID。
 *   **解決方案**: 在 `AndroidManifest.xml` 加入 `<meta-data>` 並使用 `tools:replace="android:value"`。
 
-### 問題 F: 原生庫缺失 (libreact_featureflagsjni.so)
+### 問題 F: 原生庫缺失 (libreact_featureflagsjni.so) - 已加強修復
 *   **錯誤日誌**: `com.facebook.soloader.SoLoaderDSONotFoundError: couldn't find DSO to load: libreact_featureflagsjni.so`
-*   **原因**: React Native 0.81+ 的新架構元件在某些裝置上無法正確加載。
+*   **原因**: React Native 0.81+ 的新架構元件在安裝時未被正確提取。
 *   **解決方案**: 
     1. 在 `android/gradle.properties` 設定 `expo.useLegacyPackaging=true`。
-    2. 確保 `AndroidManifest.xml` 的 `<application>` 標籤包含 `android:extractNativeLibs="true"`。
+    2. 在 `AndroidManifest.xml` 的 `<application>` 標籤加入 `android:extractNativeLibs="true"`。
+    3. **重要**：安裝前必須先「手動解除安裝」舊版 App，否則系統不會重新執行提取動作。
 
 ---
 
