@@ -344,9 +344,11 @@ const QuizScreen = () => {
       <View style={styles.header}>
         <View style={[styles.headerInner, isLargeScreen && { width: contentWidth, alignSelf: 'center' }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontSize: 16, marginLeft: 4 }}>返回</Text>
+            </View>
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>{title} ({viewMode})</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
           <Text style={styles.headerProgress}>{currentIndex + 1}/{computedQuestions.length}</Text>
         </View>
       </View>
@@ -447,8 +449,8 @@ const QuizScreen = () => {
             >
               <Ionicons 
                 name={status?.isFavorite ? "heart" : "heart-outline"} 
-                size={20} 
-                color={status?.isFavorite ? "#ff4d4f" : "#fff"} 
+                size={22} 
+                color={status?.isFavorite ? "#ff4d4f" : "#fff"}  
                 style={{ marginRight: 6 }}
               />
               <Text style={footerStyles.footerBtnText}>最愛</Text>
