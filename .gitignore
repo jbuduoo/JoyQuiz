@@ -14,5 +14,6 @@ credentials*.json
 service-account*.json
 .maintenance_deps/
 .pydeps/
+archive/old-report-work/
 
 data/*.apk
