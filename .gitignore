@@ -7,4 +7,12 @@ yarn-error.log*
 .DS_Store
 *.local
 
+# Local Google API credentials/tokens for maintenance scripts.
+secrets/
+token*.json
+credentials*.json
+service-account*.json
+.maintenance_deps/
+.pydeps/
+
 data/*.apk
