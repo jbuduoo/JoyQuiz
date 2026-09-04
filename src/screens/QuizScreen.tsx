@@ -7,7 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
 import { UserAnswer, ViewMode, QUIZ_CONFIGS } from '../types';
 import { StorageService } from '../services/StorageService';
-import AdBanner from '../components/AdBanner';
 
 type QuizScreenRouteProp = RouteProp<RootStackParamList, 'Quiz'>;
 
@@ -466,7 +465,6 @@ const QuizScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-        <AdBanner />
       </View>
     </SafeAreaView>
   );
