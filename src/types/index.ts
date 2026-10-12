@@ -103,7 +103,7 @@ export interface QuizProgress {
 
 export interface UserSettings {
   theme: 'light' | 'dark';
-  fontSize: 'small' | 'medium' | 'large';
+  fontSize: 'small' | 'medium' | 'large' | 'xlarge';
 }
 
 export interface QuestionFile {

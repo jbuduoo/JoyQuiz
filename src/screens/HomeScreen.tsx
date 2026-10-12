@@ -30,6 +30,22 @@ interface Category {
   fileName?: string;
 }
 
+const getGroupStyle = (typeName: string) => {
+  if (typeName.includes('選擇')) {
+    return {
+      header: styles.groupHeaderChoice,
+      title: styles.groupTitleChoice,
+      icon: styles.groupIconChoice,
+    };
+  }
+
+  return {
+    header: styles.groupHeaderTrueFalse,
+    title: styles.groupTitleTrueFalse,
+    icon: styles.groupIconTrueFalse,
+  };
+};
+
 const HomeScreen = () => {
   // 定義導航與螢幕狀態
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -409,15 +425,16 @@ const HomeScreen = () => {
 
   const renderGroup = (group: QuestionGroup) => {
     const isExpanded = expandedGroups.has(group.typeName);
+    const groupStyle = getGroupStyle(group.typeName);
     return (
       <View key={group.typeName} style={styles.groupContainer}>
         <TouchableOpacity 
-          style={styles.groupHeader} 
+          style={[styles.groupHeader, groupStyle.header]} 
           onPress={() => toggleGroup(group.typeName)}
           activeOpacity={0.7}
         >
-          <Text style={styles.groupTitle}>{group.typeName}</Text>
-          <Text style={styles.groupIcon}>{isExpanded ? '▼' : '▶'}</Text>
+          <Text style={[styles.groupTitle, groupStyle.title]}>{group.typeName}</Text>
+          <Text style={[styles.groupIcon, groupStyle.icon]}>{isExpanded ? '⌄' : '›'}</Text>
         </TouchableOpacity>
         {isExpanded && (
           <View style={styles.groupItems}>
@@ -478,17 +495,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
+    borderLeftWidth: 7,
     borderBottomWidth: 1,
     borderBottomColor: '#F2F2F7',
+  },
+  groupHeaderTrueFalse: {
+    backgroundColor: '#EAF3FF',
+    borderLeftColor: '#007AFF',
+  },
+  groupHeaderChoice: {
+    backgroundColor: '#FFF4E5',
+    borderLeftColor: '#FF9500',
   },
   groupTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#007AFF',
   },
+  groupTitleTrueFalse: {
+    color: '#064A91',
+  },
+  groupTitleChoice: {
+    color: '#8A4B00',
+  },
   groupIcon: {
-    fontSize: 16,
+    fontSize: 24,
     color: '#8E8E93',
+  },
+  groupIconTrueFalse: {
+    color: '#064A91',
+    opacity: 0.7,
+  },
+  groupIconChoice: {
+    color: '#8A4B00',
+    opacity: 0.7,
   },
   groupItems: {
     backgroundColor: '#F2F2F7',

@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, useWindowDimensions, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { RouteProp, useRoute, useNavigation, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
-import { UserAnswer, ViewMode, QUIZ_CONFIGS } from '../types';
+import { UserAnswer, UserSettings, ViewMode, QUIZ_CONFIGS } from '../types';
 import { StorageService } from '../services/StorageService';
 
 type QuizScreenRouteProp = RouteProp<RootStackParamList, 'Quiz'>;
@@ -13,6 +13,7 @@ type QuizScreenRouteProp = RouteProp<RootStackParamList, 'Quiz'>;
 const QuizScreen = () => {
   const route = useRoute<QuizScreenRouteProp>();
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
   
   // 從導航參數解構出必要的資料
@@ -31,6 +32,7 @@ const QuizScreen = () => {
   const [isSubmitted, setIsSubmitted] = useState(false); // 當前題目是否已提交答案
   const [userStatus, setUserStatus] = useState<Record<string, UserAnswer>>({}); // 用戶所有題目的作答狀態(收藏、錯題數等)
   const [isLoaded, setIsLoaded] = useState(false); // 頁面是否已完成初始載入
+  const [settings, setSettings] = useState<UserSettings>({ theme: 'light', fontSize: 'medium' });
   
   // useRef 用於在渲染之間保存不觸發重繪的值
   const lastQuestionId = useRef<string | null>(null); // 紀錄上一題 ID，偵測是否切換題目
@@ -108,6 +110,12 @@ const QuizScreen = () => {
   useEffect(() => {
     loadUserStatus();
   }, []);
+
+  useEffect(() => {
+    if (isFocused) {
+      StorageService.getSettings().then(setSettings);
+    }
+  }, [isFocused]);
 
   /**
    * 根據不同模式過濾出當前要練習的題目清單
@@ -311,8 +319,25 @@ const QuizScreen = () => {
   };
 
   const handleReportIssue = () => {
-    const reportContent = `${currentQuestion.testName}_${currentQuestion.id}`;
-    const googleFormUrl = `https://docs.google.com/forms/d/e/1FAIpQLSfnfLFKCPYCRXbY12_xv5abVfvon_FTULBc0FYd4d7xD2A7ZQ/viewform?usp=pp_url&entry.654895695=${encodeURIComponent(reportContent)}`;
+    const optionsText = ['A', 'B', 'C', 'D', 'E']
+      .map(key => {
+        const optionContent = (currentQuestion as any)[key];
+        return optionContent ? `(${key}) ${optionContent}` : '';
+      })
+      .filter(Boolean)
+      .join('\n');
+    const reportContent = [
+      `${currentQuestion.testName}_${currentQuestion.id}`,
+      '',
+      `題目：${currentQuestion.content}`,
+      '',
+      optionsText,
+      '',
+      `正確答案：${currentQuestion.Ans}`,
+      '',
+      `詳答：${currentQuestion.exp || '暫無詳解'}`,
+    ].join('\n');
+    const googleFormUrl = `https://docs.google.com/forms/d/e/1FAIpQLSfnfLFKCPYCRXbY12_xv5abVfvon_FTULBc0FYd4d7xD2A7ZQ/viewform?usp=pp_url&entry.269106896=${encodeURIComponent(reportContent)}`;
     Linking.openURL(googleFormUrl);
   };
 
@@ -336,6 +361,7 @@ const QuizScreen = () => {
   const status = userStatus[currentQuestion.id];
   const isCorrect = status?.isCorrect;
   const isAnswered = status?.isAnswered;
+  const fontSizeStyle = fontSizeStyles[settings.fontSize] || fontSizeStyles.medium;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -343,9 +369,10 @@ const QuizScreen = () => {
       <View style={styles.header}>
         <View style={[styles.headerInner, isLargeScreen && { width: contentWidth, alignSelf: 'center' }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 16, marginLeft: 4 }}>返回</Text>
-            </View>
+            <Text style={styles.backBtnText}>
+              <Text style={styles.backBtnIcon}>‹</Text>
+              {' 返回'}
+            </Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
           <Text style={styles.headerProgress}>{currentIndex + 1}/{computedQuestions.length}</Text>
@@ -361,7 +388,7 @@ const QuizScreen = () => {
           ]}
         >
           {/* Question */}
-          <Text style={styles.questionText}>
+          <Text style={[styles.questionText, fontSizeStyle.questionText]}>
             {currentIndex + 1}. {currentQuestion.content}
           </Text>
 
@@ -387,7 +414,7 @@ const QuizScreen = () => {
                 onPress={() => handleOptionPress(key)}
                 disabled={(isSubmitted && currentQuestion.Type !== '複選題') || quizConfig.isReadOnly}
               >
-                <Text style={styles.optionText}>({key}) {optionContent}</Text>
+                <Text style={[styles.optionText, fontSizeStyle.optionText]}>({key}) {optionContent}</Text>
               </TouchableOpacity>
             );
           })}
@@ -420,8 +447,8 @@ const QuizScreen = () => {
                   {isCorrect ? 'V 答對了' : (isAnswered ? 'X 答錯了' : '○ 未作答')}
                 </Text>
               </View>
-              <Text style={styles.correctAnswerText}>正確答案：{currentQuestion.Ans}</Text>
-              <Text style={styles.expText}>
+              <Text style={[styles.correctAnswerText, fontSizeStyle.answerText]}>正確答案：{currentQuestion.Ans}</Text>
+              <Text style={[styles.expText, fontSizeStyle.expText]}>
                 {currentQuestion.exp || '暫無詳解'}
               </Text>
               <Text style={styles.aiDisclaimerText}>
@@ -474,6 +501,33 @@ const footerStyles = {
   footerBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' as const }
 };
 
+const fontSizeStyles = {
+  small: {
+    questionText: { fontSize: 15, lineHeight: 23 },
+    optionText: { fontSize: 15, lineHeight: 22 },
+    answerText: { fontSize: 15, lineHeight: 22 },
+    expText: { fontSize: 15, lineHeight: 23 },
+  },
+  medium: {
+    questionText: { fontSize: 16, lineHeight: 24 },
+    optionText: { fontSize: 15, lineHeight: 22 },
+    answerText: { fontSize: 16, lineHeight: 23 },
+    expText: { fontSize: 16, lineHeight: 24 },
+  },
+  large: {
+    questionText: { fontSize: 18, lineHeight: 27 },
+    optionText: { fontSize: 17, lineHeight: 25 },
+    answerText: { fontSize: 18, lineHeight: 26 },
+    expText: { fontSize: 18, lineHeight: 27 },
+  },
+  xlarge: {
+    questionText: { fontSize: 20, lineHeight: 30 },
+    optionText: { fontSize: 19, lineHeight: 28 },
+    answerText: { fontSize: 20, lineHeight: 29 },
+    expText: { fontSize: 20, lineHeight: 30 },
+  },
+};
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#007AFF' },
   container: { flex: 1, backgroundColor: '#fff' },
@@ -483,7 +537,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12 
   },
   headerInner: { flexDirection: 'row', alignItems: 'center' },
-  backBtn: { marginRight: 8 },
+  backBtn: {
+    width: 82,
+    minHeight: 38,
+    marginRight: 8,
+    justifyContent: 'center',
+  },
+  backBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  backBtnIcon: {
+    fontSize: 24,
+    lineHeight: 24,
+  },
   headerTitle: { flex: 1, color: '#fff', fontSize: 16, fontWeight: 'bold' },
   headerProgress: { color: '#fff', fontSize: 13 },
   scrollContent: { padding: 12, paddingBottom: 20 },
@@ -514,7 +582,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#dee2e6'
   },
-  actionBtnText: { color: '#666', fontSize: 13, fontWeight: '500' },
+  actionBtnText: { color: '#666', fontSize: 14, fontWeight: '500' },
   feedbackCard: { 
     backgroundColor: '#f8f9fa', 
     borderRadius: 6, 
@@ -528,10 +596,10 @@ const styles = StyleSheet.create({
   statusCorrect: { color: '#28a745' },
   statusWrong: { color: '#dc3545' },
   statusUnanswered: { color: '#666' },
-  correctAnswerText: { fontSize: 15, color: '#666', marginBottom: 4 },
-  expText: { fontSize: 14, color: '#444', lineHeight: 20 },
+  correctAnswerText: { fontSize: 16, color: '#666', marginBottom: 4 },
+  expText: { fontSize: 16, color: '#444', lineHeight: 24 },
   aiDisclaimerText: { 
-    fontSize: 11, 
+    fontSize: 12, 
     color: '#8E8E93', 
     marginTop: 12, 
     textAlign: 'center',

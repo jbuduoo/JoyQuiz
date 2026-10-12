@@ -15,5 +15,6 @@ service-account*.json
 .maintenance_deps/
 .pydeps/
 archive/old-report-work/
+outputs/
 
 data/*.apk

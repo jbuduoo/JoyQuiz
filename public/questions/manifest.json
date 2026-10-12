@@ -1,0 +1,154 @@
+{
+  "appName": "JoyQuiz 政府採購法題庫",
+  "version": "2026.10.08",
+  "generatedAt": "2026-10-08T08:31:46+00:00",
+  "indexFile": "questions.json",
+  "latestFile": "latest.json",
+  "files": [
+    {
+      "id": "A001",
+      "file": "A001.json",
+      "count": 184
+    },
+    {
+      "id": "A002",
+      "file": "A002.json",
+      "count": 264
+    },
+    {
+      "id": "A003",
+      "file": "A003.json",
+      "count": 163
+    },
+    {
+      "id": "A004",
+      "file": "A004.json",
+      "count": 121
+    },
+    {
+      "id": "A005",
+      "file": "A005.json",
+      "count": 158
+    },
+    {
+      "id": "A006",
+      "file": "A006.json",
+      "count": 129
+    },
+    {
+      "id": "A007",
+      "file": "A007.json",
+      "count": 129
+    },
+    {
+      "id": "A008",
+      "file": "A008.json",
+      "count": 96
+    },
+    {
+      "id": "A009",
+      "file": "A009.json",
+      "count": 83
+    },
+    {
+      "id": "A010",
+      "file": "A010.json",
+      "count": 65
+    },
+    {
+      "id": "A011",
+      "file": "A011.json",
+      "count": 32
+    },
+    {
+      "id": "A012",
+      "file": "A012.json",
+      "count": 939
+    },
+    {
+      "id": "A013",
+      "file": "A013.json",
+      "count": 226
+    },
+    {
+      "id": "A014",
+      "file": "A014.json",
+      "count": 97
+    },
+    {
+      "id": "B001",
+      "file": "B001.json",
+      "count": 71
+    },
+    {
+      "id": "B002",
+      "file": "B002.json",
+      "count": 142
+    },
+    {
+      "id": "B003",
+      "file": "B003.json",
+      "count": 67
+    },
+    {
+      "id": "B004",
+      "file": "B004.json",
+      "count": 58
+    },
+    {
+      "id": "B005",
+      "file": "B005.json",
+      "count": 109
+    },
+    {
+      "id": "B006",
+      "file": "B006.json",
+      "count": 35
+    },
+    {
+      "id": "B007",
+      "file": "B007.json",
+      "count": 33
+    },
+    {
+      "id": "B008",
+      "file": "B008.json",
+      "count": 44
+    },
+    {
+      "id": "B009",
+      "file": "B009.json",
+      "count": 45
+    },
+    {
+      "id": "B010",
+      "file": "B010.json",
+      "count": 21
+    },
+    {
+      "id": "B011",
+      "file": "B011.json",
+      "count": 24
+    },
+    {
+      "id": "B012",
+      "file": "B012.json",
+      "count": 200
+    },
+    {
+      "id": "B013",
+      "file": "B013.json",
+      "count": 14
+    },
+    {
+      "id": "B014",
+      "file": "B014.json",
+      "count": 50
+    },
+    {
+      "id": "sample",
+      "file": "sample.json",
+      "count": 3
+    }
+  ]
+}
